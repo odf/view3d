@@ -1,0 +1,15 @@
+{
+    "type": "package",
+    "name": "view3d",
+    "summary": "3D scene viewer",
+    "license": "Apache-2.0",
+    "version": "1.0.0",
+    "elm-version": "0.19.1",
+    "exposed-modules": [
+        "View3d",
+        "View3d.Mesh",
+        "View3d.RendererCommon"
+    ],
+    "dependencies": {},
+    "test-dependencies": {}
+}
