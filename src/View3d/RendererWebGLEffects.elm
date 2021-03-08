@@ -173,7 +173,7 @@ entities meshes model options =
                         )
 
         outlineEntities =
-            if not drawFog then
+            if not options.addOutlines then
                 []
 
             else
