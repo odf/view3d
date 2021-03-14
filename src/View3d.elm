@@ -470,6 +470,17 @@ setScene maybeMeshes instances model =
                 Just meshes ->
                     setMeshes meshes model
 
+        fixRadius t r =
+            let
+                o =
+                    Mat4.transform t (vec3 0 0 0)
+            in
+            [ Vec3.i, Vec3.j, Vec3.k ]
+                |> List.map
+                    (Vec3.scale r >> Mat4.transform t >> Vec3.distance o)
+                |> List.maximum
+                |> Maybe.withDefault 0
+
         boundingData =
             modelWithMeshes.pickingData
                 |> Array.toList
@@ -480,7 +491,7 @@ setScene maybeMeshes instances model =
                             |> List.map
                                 (\{ transform } ->
                                     ( Mat4.transform transform p.centroid
-                                    , p.radius
+                                    , fixRadius transform p.radius
                                     )
                                 )
                     )
