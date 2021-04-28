@@ -33,7 +33,6 @@ import Html.Events.Extra.Touch as Touch
 import Json.Decode as Decode
 import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
-import Scene3d exposing (mesh)
 import Set exposing (Set)
 import View3d.Camera as Camera
 import View3d.Mesh as Mesh
