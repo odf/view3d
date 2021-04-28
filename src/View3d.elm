@@ -17,6 +17,7 @@ module View3d exposing
     , setSelection
     , setSize
     , subscriptions
+    , surface
     , update
     , view
     )
@@ -69,6 +70,11 @@ type alias Mesh a =
 indexedTriangles : List vertex -> List ( Int, Int, Int ) -> Mesh vertex
 indexedTriangles =
     Mesh.IndexedTriangles
+
+
+surface : List vertex -> List (List Int) -> Mesh vertex
+surface =
+    Mesh.surface
 
 
 
