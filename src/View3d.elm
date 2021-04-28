@@ -1,8 +1,14 @@
 module View3d exposing
-    ( Model
+    ( Instance
+    , Material
+    , Mesh
+    , Model
     , Msg
+    , Options
     , Outcome(..)
+    , Vertex
     , encompass
+    , indexedTriangles
     , init
     , lookAlong
     , requestRedraw
@@ -29,11 +35,40 @@ import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Scene3d exposing (mesh)
 import Set exposing (Set)
 import View3d.Camera as Camera
-import View3d.Mesh as Mesh exposing (Mesh)
-import View3d.RendererCommon as RendererCommon exposing (Instance, Vertex)
+import View3d.Mesh as Mesh
+import View3d.RendererCommon as RendererCommon
 import View3d.RendererScene3d as RendererScene3d
 import View3d.RendererWebGLEffects as RendererEffects
 import WebGL
+
+
+
+-- RE-EXPORTING
+
+
+type alias Vertex =
+    RendererCommon.Vertex
+
+
+type alias Instance =
+    RendererCommon.Instance
+
+
+type alias Material =
+    RendererCommon.Material
+
+
+type alias Options =
+    RendererCommon.Options
+
+
+type alias Mesh a =
+    Mesh.Mesh a
+
+
+indexedTriangles : List vertex -> List ( Int, Int, Int ) -> Mesh vertex
+indexedTriangles =
+    Mesh.IndexedTriangles
 
 
 
@@ -67,6 +102,10 @@ type Outcome
     | Pick Touch.Keys { meshIndex : Int, instanceIndex : Int }
 
 
+
+-- INIT
+
+
 init : Model
 init =
     { size = { width = 0, height = 0 }
@@ -83,7 +122,7 @@ init =
     }
 
 
-meshForPicking : Mesh RendererCommon.Vertex -> Mesh Vec3
+meshForPicking : Mesh Vertex -> Mesh Vec3
 meshForPicking mesh =
     mesh
         |> Mesh.mapVertices (\v -> v.position)
@@ -122,7 +161,7 @@ radius mesh =
 pick :
     Camera.Ray
     -> Array PickingInfo
-    -> List RendererCommon.Instance
+    -> List Instance
     -> Maybe ( Int, Int )
 pick ray pdata scene =
     let
@@ -530,7 +569,7 @@ requestRedraw model =
 -- VIEW
 
 
-view : (Msg -> msg) -> Model -> RendererCommon.Options -> Html msg
+view : (Msg -> msg) -> Model -> Options -> Html msg
 view toMsg model options =
     let
         attributes =
