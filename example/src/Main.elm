@@ -9,7 +9,6 @@ import Math.Matrix4 as Mat4
 import Math.Vector3 exposing (Vec3, vec3)
 import Mesh
 import Point3d exposing (Point3d)
-import TriangularMesh
 import Vector3d exposing (Vector3d)
 import View3d
 
@@ -146,25 +145,23 @@ geometry _ =
 
 
 convertMesh : Mesh.Mesh (Point3d units coords) -> View3d.Mesh
-convertMesh mesh =
+convertMesh meshIn =
     let
         makeVertex point normal =
             { position = pointToVec3 point
             , normal = normalToVec3 normal
             }
 
-        tmesh =
-            mesh
-                |> Mesh.withNormals identity makeVertex
-                |> Mesh.toTriangularMesh
+        mesh =
+            Mesh.withNormals identity makeVertex meshIn
 
         verts =
-            TriangularMesh.vertices tmesh |> Array.toList
+            Mesh.vertices mesh |> Array.toList
 
         faces =
-            TriangularMesh.faceIndices tmesh
+            Mesh.faceIndices mesh
     in
-    View3d.indexedTriangles verts faces
+    View3d.surface verts faces
 
 
 pointToVec3 : Point3d units coordinates -> Vec3

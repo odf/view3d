@@ -8,7 +8,6 @@ module View3d exposing
     , Outcome(..)
     , Vertex
     , encompass
-    , indexedTriangles
     , init
     , lookAlong
     , requestRedraw
@@ -64,11 +63,6 @@ type alias Options =
 
 type alias Mesh =
     Mesh.Mesh Vertex
-
-
-indexedTriangles : List vertex -> List ( Int, Int, Int ) -> Mesh.Mesh vertex
-indexedTriangles =
-    Mesh.IndexedTriangles
 
 
 surface : List vertex -> List (List Int) -> Mesh.Mesh vertex
