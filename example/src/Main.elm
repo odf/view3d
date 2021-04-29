@@ -104,7 +104,7 @@ subscriptions model =
 -- Geometry
 
 
-geometry : Flags -> ( List (View3d.Mesh View3d.Vertex), List View3d.Instance )
+geometry : Flags -> ( List View3d.Mesh, List View3d.Instance )
 geometry _ =
     let
         positions =
@@ -145,7 +145,7 @@ geometry _ =
     ( [ mesh ], [ inst ] )
 
 
-convertMesh : Mesh.Mesh (Point3d units coords) -> View3d.Mesh View3d.Vertex
+convertMesh : Mesh.Mesh (Point3d units coords) -> View3d.Mesh
 convertMesh mesh =
     let
         makeVertex point normal =

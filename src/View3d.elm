@@ -62,16 +62,16 @@ type alias Options =
     RendererCommon.Options
 
 
-type alias Mesh a =
-    Mesh.Mesh a
+type alias Mesh =
+    Mesh.Mesh Vertex
 
 
-indexedTriangles : List vertex -> List ( Int, Int, Int ) -> Mesh vertex
+indexedTriangles : List vertex -> List ( Int, Int, Int ) -> Mesh.Mesh vertex
 indexedTriangles =
     Mesh.IndexedTriangles
 
 
-surface : List vertex -> List (List Int) -> Mesh vertex
+surface : List vertex -> List (List Int) -> Mesh.Mesh vertex
 surface =
     Mesh.surface
 
@@ -87,7 +87,7 @@ type alias Position =
 type alias PickingInfo =
     { centroid : Vec3
     , radius : Float
-    , pickingMesh : Mesh Vec3
+    , pickingMesh : Mesh.Mesh Vec3
     }
 
 
@@ -127,14 +127,14 @@ init =
     }
 
 
-meshForPicking : Mesh Vertex -> Mesh Vec3
+meshForPicking : Mesh -> Mesh.Mesh Vec3
 meshForPicking mesh =
     mesh
         |> Mesh.mapVertices (\v -> v.position)
         |> Mesh.resolved
 
 
-centroid : Mesh { a | position : Vec3 } -> Vec3
+centroid : Mesh.Mesh { a | position : Vec3 } -> Vec3
 centroid mesh =
     let
         vertices =
@@ -148,7 +148,7 @@ centroid mesh =
         |> Vec3.scale (1 / toFloat n)
 
 
-radius : Mesh { a | position : Vec3 } -> Float
+radius : Mesh.Mesh { a | position : Vec3 } -> Float
 radius mesh =
     let
         vertices =
@@ -473,7 +473,7 @@ setSize size model =
     updateCamera (Camera.setFrameSize size) { model | size = size }
 
 
-setMeshes : List (Mesh Vertex) -> Model -> Model
+setMeshes : List Mesh -> Model -> Model
 setMeshes meshes model =
     let
         meshesScene3d =
@@ -503,7 +503,7 @@ setMeshes meshes model =
     }
 
 
-setScene : Maybe (List (Mesh Vertex)) -> List Instance -> Model -> Model
+setScene : Maybe (List Mesh) -> List Instance -> Model -> Model
 setScene maybeMeshes instances model =
     let
         modelWithMeshes =
