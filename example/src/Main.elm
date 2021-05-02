@@ -6,7 +6,7 @@ import Color
 import Dict
 import Html
 import Math.Matrix4 as Mat4
-import Math.Vector3 exposing (Vec3, vec3)
+import Math.Vector3 exposing (Vec3)
 import Mesh
 import Point3d exposing (Point3d)
 import Vector3d exposing (Vector3d)
@@ -60,21 +60,14 @@ init flags =
 
 view : Model -> Html.Html Msg
 view model =
+    let
+        defaults =
+            View3d.defaultOptions
+
+        options =
+            { defaults | drawWires = True }
+    in
     Html.div [] [ View3d.view identity model options ]
-
-
-options : View3d.Options
-options =
-    { orthogonalView = False
-    , drawWires = True
-    , fadeToBackground = 0.4
-    , fadeToBlue = 0.1
-    , backgroundColor = Color.black
-    , addOutlines = False
-    , outlineWidth = 0.0
-    , outlineColor = Color.black
-    , drawShadows = True
-    }
 
 
 

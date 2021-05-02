@@ -7,6 +7,7 @@ module View3d exposing
     , Options
     , Outcome(..)
     , Vertex
+    , defaultOptions
     , encompass
     , init
     , lookAlong
@@ -25,6 +26,7 @@ module View3d exposing
 import Array exposing (Array)
 import Bitwise
 import Browser.Events as Events
+import Color
 import DOM
 import Html exposing (Html)
 import Html.Attributes
@@ -637,6 +639,20 @@ view toMsg (Model model) options =
             ]
     in
     WebGL.toHtmlWith webGLOptions attributes entities
+
+
+defaultOptions : Options
+defaultOptions =
+    { orthogonalView = False
+    , drawWires = False
+    , fadeToBackground = 0.4
+    , fadeToBlue = 0.1
+    , backgroundColor = Color.black
+    , addOutlines = False
+    , outlineWidth = 0.0
+    , outlineColor = Color.black
+    , drawShadows = True
+    }
 
 
 onMouseDown :
