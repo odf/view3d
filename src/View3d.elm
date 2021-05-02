@@ -62,10 +62,10 @@ type alias Options =
 
 
 type alias Mesh =
-    Mesh.Mesh Vertex
+    MeshImpl Vertex
 
 
-surface : List vertex -> List (List Int) -> Mesh.Mesh vertex
+surface : List vertex -> List (List Int) -> MeshImpl vertex
 surface =
     Mesh.surface
 
@@ -78,14 +78,18 @@ type alias Position =
     { x : Float, y : Float }
 
 
+type alias MeshImpl a =
+    Mesh.Mesh a
+
+
 type alias PickingInfo =
     { centroid : Vec3
     , radius : Float
-    , pickingMesh : Mesh.Mesh Vec3
+    , pickingMesh : MeshImpl Vec3
     }
 
 
-type alias Model =
+type alias ModelImpl =
     RendererCommon.Model
         { requestRedraw : Bool
         , touchStart : Position
@@ -93,6 +97,10 @@ type alias Model =
         , meshesWebGLFog : Array RendererEffects.Mesh
         , pickingData : Array PickingInfo
         }
+
+
+type Model
+    = Model ModelImpl
 
 
 type Outcome
@@ -107,28 +115,29 @@ type Outcome
 
 init : Model
 init =
-    { size = { width = 0, height = 0 }
-    , scene = []
-    , selected = Set.empty
-    , center = vec3 0 0 0
-    , radius = 0
-    , cameraState = Camera.initialState
-    , requestRedraw = False
-    , touchStart = { x = 0, y = 0 }
-    , meshesScene3d = Array.empty
-    , meshesWebGLFog = Array.empty
-    , pickingData = Array.empty
-    }
+    Model
+        { size = { width = 0, height = 0 }
+        , scene = []
+        , selected = Set.empty
+        , center = vec3 0 0 0
+        , radius = 0
+        , cameraState = Camera.initialState
+        , requestRedraw = False
+        , touchStart = { x = 0, y = 0 }
+        , meshesScene3d = Array.empty
+        , meshesWebGLFog = Array.empty
+        , pickingData = Array.empty
+        }
 
 
-meshForPicking : Mesh -> Mesh.Mesh Vec3
+meshForPicking : Mesh -> MeshImpl Vec3
 meshForPicking mesh =
     mesh
         |> Mesh.mapVertices (\v -> v.position)
         |> Mesh.resolved
 
 
-centroid : Mesh.Mesh { a | position : Vec3 } -> Vec3
+centroid : MeshImpl { a | position : Vec3 } -> Vec3
 centroid mesh =
     let
         vertices =
@@ -142,7 +151,7 @@ centroid mesh =
         |> Vec3.scale (1 / toFloat n)
 
 
-radius : Mesh.Mesh { a | position : Vec3 } -> Float
+radius : MeshImpl { a | position : Vec3 } -> Float
 radius mesh =
     let
         vertices =
@@ -276,7 +285,7 @@ decodeOffset =
 
 
 subscriptions : (Msg -> msg) -> Model -> Sub msg
-subscriptions toMsg model =
+subscriptions toMsg (Model model) =
     let
         frameEvent =
             if
@@ -310,20 +319,21 @@ subscriptions toMsg model =
 
 
 update : Msg -> Model -> ( Model, Outcome )
-update msg model =
+update msg (Model model) =
     case msg of
         FrameMsg time ->
             ( updateCamera (Camera.nextFrame time)
-                { model | requestRedraw = False }
+                (Model { model | requestRedraw = False })
             , None
             )
 
         MouseDownMsg pos posRel _ buttons ->
             if buttons.right then
-                ( model, None )
+                ( Model model, None )
 
             else
                 ( { model | touchStart = posRel }
+                    |> Model
                     |> updateCamera (Camera.startDragging pos)
                 , None
                 )
@@ -335,18 +345,22 @@ update msg model =
                         None
 
                     else
-                        pickingOutcome model.touchStart modifiers model
+                        pickingOutcome model.touchStart modifiers (Model model)
             in
-            ( updateCamera Camera.finishDragging model, outcome )
+            ( updateCamera Camera.finishDragging (Model model), outcome )
 
         MouseMoveMsg pos modifiers ->
-            ( updateCamera (Camera.dragTo pos modifiers.shift) model, None )
+            ( updateCamera
+                (Camera.dragTo pos modifiers.shift)
+                (Model model)
+            , None
+            )
 
         TouchStartMsg posList offset ->
-            ( touchStartUpdate posList offset model, None )
+            ( touchStartUpdate posList offset (Model model), None )
 
         TouchMoveMsg posList ->
-            ( touchMoveUpdate posList model, None )
+            ( touchMoveUpdate posList (Model model), None )
 
         TouchEndMsg ->
             let
@@ -358,20 +372,20 @@ update msg model =
                         pickingOutcome
                             model.touchStart
                             { alt = True, ctrl = False, shift = False }
-                            model
+                            (Model model)
             in
-            ( updateCamera Camera.finishDragging model, outcome )
+            ( updateCamera Camera.finishDragging (Model model), outcome )
 
         WheelMsg val modifiers ->
             ( updateCamera
                 (Camera.updateZoom (wheelZoomFactor val) modifiers.shift)
-                model
+                (Model model)
             , None
             )
 
 
 pickingOutcome : Position -> Touch.Keys -> Model -> Outcome
-pickingOutcome pos mods model =
+pickingOutcome pos mods (Model model) =
     Camera.pickingRay pos model.cameraState model.center (3 * model.radius)
         |> Maybe.andThen
             (\r -> pick r model.pickingData model.scene)
@@ -396,22 +410,25 @@ centerPosition posList =
 
 
 touchStartUpdate : List Position -> Position -> Model -> Model
-touchStartUpdate posList offset model =
+touchStartUpdate posList offset (Model model) =
     case posList of
         pos :: [] ->
             { model
                 | touchStart = { x = pos.x - offset.x, y = pos.y - offset.y }
             }
+                |> Model
                 |> updateCamera (Camera.startDragging pos)
 
         posA :: posB :: [] ->
-            updateCamera (Camera.startPinching posA posB) model
+            Model model
+                |> updateCamera (Camera.startPinching posA posB)
 
         _ :: _ :: _ :: [] ->
-            updateCamera (Camera.startDragging <| centerPosition posList) model
+            Model model
+                |> updateCamera (Camera.startDragging <| centerPosition posList)
 
         _ ->
-            model
+            Model model
 
 
 touchMoveUpdate : List Position -> Model -> Model
@@ -443,8 +460,8 @@ wheelZoomFactor wheelVal =
 
 
 updateCamera : (Camera.State -> Camera.State) -> Model -> Model
-updateCamera fn model =
-    { model | cameraState = fn model.cameraState }
+updateCamera fn (Model model) =
+    { model | cameraState = fn model.cameraState } |> Model
 
 
 lookAlong : Vec3 -> Vec3 -> Model -> Model
@@ -458,16 +475,16 @@ rotateBy axis angle model =
 
 
 encompass : Model -> Model
-encompass model =
-    updateCamera (Camera.encompass model.center model.radius) model
+encompass (Model model) =
+    updateCamera (Camera.encompass model.center model.radius) (Model model)
 
 
 setSize : RendererCommon.FrameSize -> Model -> Model
-setSize size model =
-    updateCamera (Camera.setFrameSize size) { model | size = size }
+setSize size (Model model) =
+    updateCamera (Camera.setFrameSize size) (Model { model | size = size })
 
 
-setMeshes : List Mesh -> Model -> Model
+setMeshes : List Mesh -> ModelImpl -> ModelImpl
 setMeshes meshes model =
     let
         meshesScene3d =
@@ -498,7 +515,7 @@ setMeshes meshes model =
 
 
 setScene : Maybe (List Mesh) -> List Instance -> Model -> Model
-setScene maybeMeshes instances model =
+setScene maybeMeshes instances (Model model) =
     let
         modelWithMeshes =
             case maybeMeshes of
@@ -546,22 +563,23 @@ setScene maybeMeshes instances model =
                 |> List.maximum
                 |> Maybe.withDefault 0.0
     in
-    { modelWithMeshes
-        | scene = instances
-        , selected = Set.empty
-        , center = sceneCenter
-        , radius = sceneRadius
-    }
+    Model
+        { modelWithMeshes
+            | scene = instances
+            , selected = Set.empty
+            , center = sceneCenter
+            , radius = sceneRadius
+        }
 
 
 setSelection : Set ( Int, Int ) -> Model -> Model
-setSelection selected model =
-    { model | selected = selected }
+setSelection selected (Model model) =
+    Model { model | selected = selected }
 
 
 requestRedraw : Model -> Model
-requestRedraw model =
-    { model | requestRedraw = True }
+requestRedraw (Model model) =
+    Model { model | requestRedraw = True }
 
 
 
@@ -569,7 +587,7 @@ requestRedraw model =
 
 
 view : (Msg -> msg) -> Model -> Options -> Html msg
-view toMsg model options =
+view toMsg (Model model) options =
     let
         attributes =
             [ Html.Attributes.style "display" "block"
