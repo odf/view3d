@@ -55,9 +55,9 @@ type alias Options =
     , drawWires : Bool
     , fadeToBackground : Float
     , fadeToBlue : Float
-    , backgroundColor : Vec3
+    , backgroundColor : Color
     , addOutlines : Bool
     , outlineWidth : Float
-    , outlineColor : Vec3
+    , outlineColor : Color
     , drawShadows : Bool
     }

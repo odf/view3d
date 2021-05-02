@@ -6,6 +6,7 @@ module View3d.RendererWebGLEffects exposing
     )
 
 import Array exposing (Array)
+import Color exposing (Color)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 exposing (Vec3, vec3)
 import Maybe
@@ -74,6 +75,15 @@ convertMeshForRenderer mesh =
             WebGL.triangles []
 
 
+colorAsVec3 : Color -> Vec3
+colorAsVec3 color =
+    let
+        { red, green, blue } =
+            Color.toRgba color
+    in
+    vec3 red green blue
+
+
 entities : Array Mesh -> Model a -> Options -> List WebGL.Entity
 entities meshes model options =
     let
@@ -140,7 +150,7 @@ entities meshes model options =
                 mesh
                 { uniforms
                     | transform = transform
-                    , color = options.backgroundColor
+                    , color = colorAsVec3 options.backgroundColor
                 }
             ]
 
@@ -154,7 +164,7 @@ entities meshes model options =
                 mesh
                 { uniforms
                     | transform = transform
-                    , color = options.outlineColor
+                    , color = colorAsVec3 options.outlineColor
                     , pushOut = 0.1 * options.outlineWidth
                 }
             ]
@@ -188,7 +198,7 @@ entities meshes model options =
     fogEntities ++ outlineEntities
 
 
-backgroundEntity : Vec3 -> WebGL.Entity
+backgroundEntity : Color -> WebGL.Entity
 backgroundEntity color =
     let
         fullScreenQuadMesh =
@@ -204,7 +214,7 @@ backgroundEntity color =
         vertexShaderTrivial
         fragmentShaderConstant
         fullScreenQuadMesh
-        { color = color }
+        { color = colorAsVec3 color }
 
 
 vertexShaderTrivial :

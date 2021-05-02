@@ -69,10 +69,10 @@ options =
     , drawWires = True
     , fadeToBackground = 0.4
     , fadeToBlue = 0.1
-    , backgroundColor = vec3 0 0 0
+    , backgroundColor = Color.black
     , addOutlines = False
     , outlineWidth = 0.0
-    , outlineColor = vec3 0 0 0
+    , outlineColor = Color.black
     , drawShadows = True
     }
 

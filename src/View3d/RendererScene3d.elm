@@ -369,16 +369,9 @@ entities meshes model options =
         boxWidth =
             6 * model.radius
 
-        boxColor =
-            let
-                { x, y, z } =
-                    Vec3.toRecord options.backgroundColor
-            in
-            Color.rgb x y z
-
         dummyBox =
             wireframeBox sceneCenter boxWidth boxWidth boxWidth
-                |> Scene3d.mesh (Material.color boxColor)
+                |> Scene3d.mesh (Material.color options.backgroundColor)
 
         sun =
             Light.directional (Light.castsShadows options.drawShadows)
