@@ -5,9 +5,11 @@ import Browser
 import Color
 import Dict
 import Html
+import Length
 import Math.Matrix4 as Mat4
 import Math.Vector3 exposing (Vec3)
 import Mesh
+import Plane3d
 import Point3d exposing (Point3d)
 import Vector3d exposing (Vector3d)
 import View3d
@@ -119,49 +121,38 @@ geometry _ =
 cylinder : Float -> Float -> Int -> View3d.Mesh
 cylinder radius length nrSegments =
     let
-        a =
-            2 * pi / toFloat nrSegments
-
         d =
             radius * 0.1
 
-        pos u r z =
-            Point3d.meters
-                (r * cos (a * toFloat u))
-                (r * sin (a * toFloat u))
-                z
+        angle u =
+            toFloat u * 2 * pi / toFloat nrSegments
+
+        radial a r z =
+            Point3d.meters (r * cos a) (r * sin a) z
+
+        midplane =
+            Plane3d.xy |> Plane3d.offsetBy (Length.meters (length / 2))
 
         position u v =
-            case v of
-                0 ->
-                    Point3d.meters 0 0 0
+            if v > 4 then
+                position u (9 - v) |> Point3d.mirrorAcross midplane
 
-                1 ->
-                    pos u (radius - d) 0
+            else
+                case v of
+                    0 ->
+                        radial (angle u) 0 0
 
-                2 ->
-                    pos u (radius - d / 2) 0
+                    1 ->
+                        radial (angle u) (radius - d) 0
 
-                3 ->
-                    pos u radius (d / 2)
+                    2 ->
+                        radial (angle u) (radius - d / 2) 0
 
-                4 ->
-                    pos u radius d
+                    3 ->
+                        radial (angle u) radius (d / 2)
 
-                5 ->
-                    pos u radius (length - d)
-
-                6 ->
-                    pos u radius (length - d / 2)
-
-                7 ->
-                    pos u (radius - d / 2) length
-
-                8 ->
-                    pos u (radius - d) length
-
-                _ ->
-                    Point3d.meters 0 0 length
+                    _ ->
+                        radial (angle u) radius d
     in
     Mesh.indexedBall nrSegments 9 position |> convertMesh
 
