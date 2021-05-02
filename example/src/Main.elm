@@ -65,7 +65,7 @@ view model =
             View3d.defaultOptions
 
         options =
-            { defaults | drawWires = True }
+            { defaults | drawWires = False }
     in
     Html.div [] [ View3d.view identity model options ]
 
@@ -98,6 +98,76 @@ subscriptions model =
 
 geometry : Flags -> ( List View3d.Mesh, List View3d.Instance )
 geometry _ =
+    cylinder 0.2 1.0 48
+
+
+cylinder : Float -> Float -> Int -> ( List View3d.Mesh, List View3d.Instance )
+cylinder radius length nrSegments =
+    let
+        a =
+            2 * pi / toFloat nrSegments
+
+        d =
+            radius * 0.1
+
+        pos u r z =
+            Point3d.meters
+                (r * cos (a * toFloat u))
+                (r * sin (a * toFloat u))
+                z
+
+        position u v =
+            case v of
+                0 ->
+                    Point3d.meters 0 0 0
+
+                1 ->
+                    pos u (radius - d) 0
+
+                2 ->
+                    pos u (radius - d / 2) 0
+
+                3 ->
+                    pos u radius (d / 2)
+
+                4 ->
+                    pos u radius d
+
+                5 ->
+                    pos u radius (length - d)
+
+                6 ->
+                    pos u radius (length - d / 2)
+
+                7 ->
+                    pos u (radius - d / 2) length
+
+                8 ->
+                    pos u (radius - d) length
+
+                _ ->
+                    Point3d.meters 0 0 length
+
+        mesh =
+            Mesh.indexedBall nrSegments 9 position
+                |> convertMesh
+
+        inst =
+            { material =
+                { color = Color.hsl 0.13 0.9 0.7
+                , roughness = 0.5
+                , metallic = 0.1
+                }
+            , transform = Mat4.identity
+            , idxMesh = 0
+            , idxInstance = 0
+            }
+    in
+    ( [ mesh ], [ inst ] )
+
+
+ball : ( List View3d.Mesh, List View3d.Instance )
+ball =
     let
         positions =
             [ ( ( 0, 0 ), Point3d.meters 0 0 -1 )
@@ -119,6 +189,7 @@ geometry _ =
         mesh =
             Mesh.indexedBall 4 2 Tuple.pair
                 |> Mesh.mapVertices getPosition
+                |> subD
                 |> subD
                 |> subD
                 |> convertMesh
