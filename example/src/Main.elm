@@ -98,10 +98,25 @@ subscriptions model =
 
 geometry : Flags -> ( List View3d.Mesh, List View3d.Instance )
 geometry _ =
-    cylinder 0.2 1.0 48
+    let
+        mesh =
+            cylinder 0.2 1.0 48
+
+        inst =
+            { material =
+                { color = Color.hsl 0.13 0.9 0.7
+                , roughness = 0.5
+                , metallic = 0.1
+                }
+            , transform = Mat4.identity
+            , idxMesh = 0
+            , idxInstance = 0
+            }
+    in
+    ( [ mesh ], [ inst ] )
 
 
-cylinder : Float -> Float -> Int -> ( List View3d.Mesh, List View3d.Instance )
+cylinder : Float -> Float -> Int -> View3d.Mesh
 cylinder radius length nrSegments =
     let
         a =
@@ -147,26 +162,11 @@ cylinder radius length nrSegments =
 
                 _ ->
                     Point3d.meters 0 0 length
-
-        mesh =
-            Mesh.indexedBall nrSegments 9 position
-                |> convertMesh
-
-        inst =
-            { material =
-                { color = Color.hsl 0.13 0.9 0.7
-                , roughness = 0.5
-                , metallic = 0.1
-                }
-            , transform = Mat4.identity
-            , idxMesh = 0
-            , idxInstance = 0
-            }
     in
-    ( [ mesh ], [ inst ] )
+    Mesh.indexedBall nrSegments 9 position |> convertMesh
 
 
-ball : ( List View3d.Mesh, List View3d.Instance )
+ball : View3d.Mesh
 ball =
     let
         positions =
@@ -185,27 +185,13 @@ ball =
 
         subD =
             Mesh.subdivideSmoothly (always False) identity (always identity)
-
-        mesh =
-            Mesh.indexedBall 4 2 Tuple.pair
-                |> Mesh.mapVertices getPosition
-                |> subD
-                |> subD
-                |> subD
-                |> convertMesh
-
-        inst =
-            { material =
-                { color = Color.hsl 0.0 0.6 0.5
-                , roughness = 0.5
-                , metallic = 0.1
-                }
-            , transform = Mat4.identity
-            , idxMesh = 0
-            , idxInstance = 0
-            }
     in
-    ( [ mesh ], [ inst ] )
+    Mesh.indexedBall 4 2 Tuple.pair
+        |> Mesh.mapVertices getPosition
+        |> subD
+        |> subD
+        |> subD
+        |> convertMesh
 
 
 convertMesh : Mesh.Mesh (Point3d units coords) -> View3d.Mesh
