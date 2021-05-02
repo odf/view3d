@@ -12,6 +12,7 @@ module View3d exposing
     , lookAlong
     , requestRedraw
     , rotateBy
+    , selection
     , setScene
     , setSelection
     , setSize
@@ -575,6 +576,11 @@ setScene maybeMeshes instances (Model model) =
 setSelection : Set ( Int, Int ) -> Model -> Model
 setSelection selected (Model model) =
     Model { model | selected = selected }
+
+
+selection : Model -> Set ( Int, Int )
+selection (Model model) =
+    model.selected
 
 
 requestRedraw : Model -> Model
