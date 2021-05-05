@@ -1,24 +1,17 @@
 module View3d.Mesh exposing
-    ( Mesh(..)
-    , getVertices
-    , mapVertices
+    ( Triangles
     , mappedRayMeshIntersection
     , resolved
-    , surface
     )
 
 import Array
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3)
+import TriangularMesh exposing (TriangularMesh)
 
 
-type Mesh vertex
-    = Triangles (List ( vertex, vertex, vertex ))
-    | IndexedTriangles (List vertex) (List ( Int, Int, Int ))
-
-
-type alias FaceSpec =
-    List Int
+type alias Triangles vertex =
+    List ( vertex, vertex, vertex )
 
 
 triangulate : List vertex -> List ( vertex, vertex, vertex )
@@ -31,51 +24,16 @@ triangulate corners =
             []
 
 
-surface : List vertex -> List FaceSpec -> Mesh vertex
-surface vertices faces =
-    List.concatMap triangulate faces
-        |> IndexedTriangles vertices
-
-
-resolved : Mesh vertex -> Mesh vertex
+resolved : TriangularMesh vertex -> Triangles vertex
 resolved mesh =
-    case mesh of
-        Triangles _ ->
-            mesh
-
-        IndexedTriangles vertices triangles ->
-            let
-                verts =
-                    Array.fromList vertices
-            in
-            triangles
-                |> List.map (\( i, j, k ) -> [ i, j, k ])
-                |> List.map (List.filterMap (\i -> Array.get i verts))
-                |> List.concatMap triangulate
-                |> Triangles
-
-
-getVertices : Mesh vertex -> List vertex
-getVertices mesh =
-    case mesh of
-        Triangles triangles ->
-            triangles
-                |> List.concatMap (\( u, v, w ) -> [ u, v, w ])
-
-        IndexedTriangles vertices _ ->
-            vertices
-
-
-mapVertices : (a -> b) -> Mesh a -> Mesh b
-mapVertices fn mesh =
-    case mesh of
-        Triangles triangles ->
-            triangles
-                |> List.map (\( p, q, r ) -> ( fn p, fn q, fn r ))
-                |> Triangles
-
-        IndexedTriangles vertices triangles ->
-            IndexedTriangles (List.map fn vertices) triangles
+    let
+        vs =
+            TriangularMesh.vertices mesh
+    in
+    TriangularMesh.faceIndices mesh
+        |> List.map (\( i, j, k ) -> [ i, j, k ])
+        |> List.map (List.filterMap (\i -> Array.get i vs))
+        |> List.concatMap triangulate
 
 
 
@@ -120,8 +78,14 @@ rayIntersectsSphere orig dir center radius =
     Vec3.lengthSquared t - lambda ^ 2 <= radius ^ 2
 
 
-rayMeshIntersection : Vec3 -> Vec3 -> Mesh Vec3 -> Vec3 -> Float -> Maybe Float
-rayMeshIntersection orig dir mesh center radius =
+rayMeshIntersection :
+    Vec3
+    -> Vec3
+    -> Triangles Vec3
+    -> Vec3
+    -> Float
+    -> Maybe Float
+rayMeshIntersection orig dir tris center radius =
     if rayIntersectsSphere orig dir center radius then
         let
             step triangle bestSoFar =
@@ -144,12 +108,7 @@ rayMeshIntersection orig dir mesh center radius =
             intersect =
                 List.foldl step Nothing
         in
-        case mesh of
-            Triangles triangles ->
-                intersect triangles
-
-            IndexedTriangles _ _ ->
-                rayMeshIntersection orig dir (resolved mesh) center radius
+        intersect tris
 
     else
         Nothing
@@ -159,11 +118,11 @@ mappedRayMeshIntersection :
     Vec3
     -> Vec3
     -> Mat4
-    -> Mesh Vec3
+    -> Triangles Vec3
     -> Vec3
     -> Float
     -> Maybe Float
-mappedRayMeshIntersection orig dir mat mesh center radius =
+mappedRayMeshIntersection orig dir mat tris center radius =
     let
         target =
             Vec3.add orig dir
@@ -180,5 +139,5 @@ mappedRayMeshIntersection orig dir mat mesh center radius =
         mappedDir =
             Vec3.scale factor (Vec3.sub mappedTarget mappedOrig)
     in
-    rayMeshIntersection mappedOrig mappedDir mesh center radius
+    rayMeshIntersection mappedOrig mappedDir tris center radius
         |> Maybe.map ((*) factor)

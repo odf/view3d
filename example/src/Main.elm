@@ -11,6 +11,7 @@ import Math.Vector3 exposing (Vec3)
 import Mesh
 import Plane3d
 import Point3d exposing (Point3d)
+import TriangularMesh exposing (TriangularMesh)
 import Vector3d exposing (Vector3d)
 import View3d
 
@@ -98,7 +99,9 @@ subscriptions model =
 -- Geometry
 
 
-geometry : Flags -> ( List View3d.Mesh, List View3d.Instance )
+geometry :
+    Flags ->
+    ( List (TriangularMesh View3d.Vertex), List View3d.Instance )
 geometry _ =
     let
         mesh =
@@ -118,7 +121,7 @@ geometry _ =
     ( [ mesh ], [ inst ] )
 
 
-cylinder : Float -> Float -> Int -> View3d.Mesh
+cylinder : Float -> Float -> Int -> TriangularMesh View3d.Vertex
 cylinder radius length nrSegments =
     let
         d =
@@ -157,7 +160,7 @@ cylinder radius length nrSegments =
     Mesh.indexedBall nrSegments 9 position |> convertMesh
 
 
-ball : View3d.Mesh
+ball : TriangularMesh View3d.Vertex
 ball =
     let
         positions =
@@ -185,24 +188,15 @@ ball =
         |> convertMesh
 
 
-convertMesh : Mesh.Mesh (Point3d units coords) -> View3d.Mesh
+convertMesh : Mesh.Mesh (Point3d units coords) -> TriangularMesh View3d.Vertex
 convertMesh meshIn =
     let
         makeVertex point normal =
             { position = pointToVec3 point
             , normal = normalToVec3 normal
             }
-
-        mesh =
-            Mesh.withNormals identity makeVertex meshIn
-
-        verts =
-            Mesh.vertices mesh |> Array.toList
-
-        faces =
-            Mesh.faceIndices mesh
     in
-    View3d.surface verts faces
+    Mesh.withNormals identity makeVertex meshIn |> Mesh.toTriangularMesh
 
 
 pointToVec3 : Point3d units coordinates -> Vec3

@@ -23,11 +23,10 @@ import Scene3d.Light as Light
 import Scene3d.Material as Material
 import Scene3d.Mesh
 import Set
-import Triangle3d
-import TriangularMesh
+import TriangularMesh exposing (TriangularMesh)
 import Vector3d exposing (Vector3d)
 import View3d.Camera as Camera
-import View3d.Mesh as Mesh exposing (Mesh)
+import View3d.Mesh as Mesh
 import View3d.RendererCommon exposing (..)
 import Viewpoint3d
 import WebGL
@@ -57,37 +56,23 @@ asUnitlessDirection p =
     Vector3d.unitless (Vec3.getX p) (Vec3.getY p) (Vec3.getZ p)
 
 
-convertSurface : Mesh.Mesh Vertex -> Scene3d.Mesh.Uniform WorldCoordinates
+convertSurface : TriangularMesh Vertex -> Scene3d.Mesh.Uniform WorldCoordinates
 convertSurface mesh =
-    case mesh of
-        Mesh.Triangles triangles ->
-            triangles
-                |> List.map
-                    (\( p, q, r ) ->
-                        Triangle3d.from
-                            (asPointInInches p.position)
-                            (asPointInInches q.position)
-                            (asPointInInches r.position)
+    let
+        verts =
+            TriangularMesh.vertices mesh
+                |> Array.map
+                    (\v ->
+                        { position = asPointInInches v.position
+                        , normal = asUnitlessDirection v.normal
+                        }
                     )
-                |> Scene3d.Mesh.facets
-
-        Mesh.IndexedTriangles vertices triangles ->
-            let
-                verts =
-                    vertices
-                        |> List.map
-                            (\v ->
-                                { position = asPointInInches v.position
-                                , normal = asUnitlessDirection v.normal
-                                }
-                            )
-                        |> Array.fromList
-            in
-            TriangularMesh.indexed verts triangles
-                |> Scene3d.Mesh.indexedFaces
+    in
+    TriangularMesh.indexed verts (TriangularMesh.faceIndices mesh)
+        |> Scene3d.Mesh.indexedFaces
 
 
-convertMeshForRenderer : Mesh.Mesh Vertex -> Mesh
+convertMeshForRenderer : TriangularMesh Vertex -> Mesh
 convertMeshForRenderer mesh =
     let
         surface =

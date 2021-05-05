@@ -1,7 +1,6 @@
 module View3d exposing
     ( Instance
     , Material
-    , Mesh
     , Model
     , Msg
     , Options
@@ -18,7 +17,6 @@ module View3d exposing
     , setSelection
     , setSize
     , subscriptions
-    , surface
     , update
     , view
     )
@@ -36,6 +34,7 @@ import Json.Decode as Decode
 import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Set exposing (Set)
+import TriangularMesh exposing (TriangularMesh)
 import View3d.Camera as Camera
 import View3d.Mesh as Mesh
 import View3d.RendererCommon as RendererCommon
@@ -64,15 +63,6 @@ type alias Options =
     RendererCommon.Options
 
 
-type alias Mesh =
-    MeshImpl Vertex
-
-
-surface : List vertex -> List (List Int) -> MeshImpl vertex
-surface =
-    Mesh.surface
-
-
 
 -- MODEL
 
@@ -81,14 +71,10 @@ type alias Position =
     { x : Float, y : Float }
 
 
-type alias MeshImpl a =
-    Mesh.Mesh a
-
-
 type alias PickingInfo =
     { centroid : Vec3
     , radius : Float
-    , pickingMesh : MeshImpl Vec3
+    , pickingMesh : Mesh.Triangles Vec3
     }
 
 
@@ -133,18 +119,20 @@ init =
         }
 
 
-meshForPicking : Mesh -> MeshImpl Vec3
+meshForPicking : TriangularMesh Vertex -> Mesh.Triangles Vec3
 meshForPicking mesh =
     mesh
-        |> Mesh.mapVertices (\v -> v.position)
+        |> TriangularMesh.mapVertices .position
         |> Mesh.resolved
 
 
-centroid : MeshImpl { a | position : Vec3 } -> Vec3
+centroid : TriangularMesh { a | position : Vec3 } -> Vec3
 centroid mesh =
     let
         vertices =
-            List.map .position (Mesh.getVertices mesh)
+            TriangularMesh.vertices mesh
+                |> Array.toList
+                |> List.map .position
 
         n =
             List.length vertices
@@ -154,11 +142,13 @@ centroid mesh =
         |> Vec3.scale (1 / toFloat n)
 
 
-radius : MeshImpl { a | position : Vec3 } -> Float
+radius : TriangularMesh { a | position : Vec3 } -> Float
 radius mesh =
     let
         vertices =
-            List.map .position (Mesh.getVertices mesh)
+            TriangularMesh.vertices mesh
+                |> Array.toList
+                |> List.map .position
 
         c =
             centroid mesh
@@ -487,7 +477,7 @@ setSize size (Model model) =
     updateCamera (Camera.setFrameSize size) (Model { model | size = size })
 
 
-setMeshes : List Mesh -> ModelImpl -> ModelImpl
+setMeshes : List (TriangularMesh Vertex) -> ModelImpl -> ModelImpl
 setMeshes meshes model =
     let
         meshesScene3d =
@@ -517,7 +507,11 @@ setMeshes meshes model =
     }
 
 
-setScene : Maybe (List Mesh) -> List Instance -> Model -> Model
+setScene :
+    Maybe (List (TriangularMesh Vertex))
+    -> List Instance
+    -> Model
+    -> Model
 setScene maybeMeshes instances (Model model) =
     let
         modelWithMeshes =

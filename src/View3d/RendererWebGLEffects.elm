@@ -17,6 +17,7 @@ import WebGL
 import WebGL.Settings
 import WebGL.Settings.Blend as Blend
 import WebGL.Settings.DepthTest as DepthTest
+import TriangularMesh exposing (TriangularMesh)
 
 
 type alias VertexExtended =
@@ -59,20 +60,18 @@ extend v x y z =
     }
 
 
-convertMeshForRenderer : Mesh.Mesh Vertex -> Mesh
+convertMeshForRenderer : TriangularMesh Vertex -> Mesh
 convertMeshForRenderer mesh =
-    case Mesh.resolved mesh of
-        Mesh.Triangles triangles ->
-            triangles
-                |> List.map
-                    (\( u, v, w ) ->
-                        ( extend u 1 0 0, extend v 1 1 0, extend w 1 0 1 )
-                    )
-                |> WebGL.triangles
-
-        -- resolved produces Triangles, so this can't happen
-        Mesh.IndexedTriangles _ _ ->
-            WebGL.triangles []
+    let
+        triangles =
+            Mesh.resolved mesh
+    in
+    triangles
+        |> List.map
+            (\( u, v, w ) ->
+                ( extend u 1 0 0, extend v 1 1 0, extend w 1 0 1 )
+            )
+        |> WebGL.triangles
 
 
 colorAsVec3 : Color -> Vec3
