@@ -1,15 +1,12 @@
 module Main exposing (main)
 
-import Array
 import Browser
 import Color
-import Dict
 import Html
 import Length
 import Math.Matrix4 as Mat4
 import Math.Vector3 exposing (Vec3)
 import Mesh
-import Plane3d
 import Point3d exposing (Point3d)
 import TriangularMesh exposing (TriangularMesh)
 import Vector3d exposing (Vector3d)
@@ -100,12 +97,12 @@ subscriptions model =
 
 
 geometry :
-    Flags ->
-    ( List (TriangularMesh View3d.Vertex), List View3d.Instance )
+    Flags
+    -> ( List (TriangularMesh View3d.Vertex), List View3d.Instance )
 geometry _ =
     let
         mesh =
-            cylinder 0.2 1.0 48
+            sheet
 
         inst =
             { material =
@@ -121,68 +118,28 @@ geometry _ =
     ( [ mesh ], [ inst ] )
 
 
-cylinder : Float -> Float -> Int -> TriangularMesh View3d.Vertex
-cylinder radius length nrSegments =
+sheet : TriangularMesh View3d.Vertex
+sheet =
     let
-        d =
-            radius * 0.1
-
-        angle u =
-            toFloat u * 2 * pi / toFloat nrSegments
-
-        radial a r z =
-            Point3d.meters (r * cos a) (r * sin a) z
-
-        midplane =
-            Plane3d.xy |> Plane3d.offsetBy (Length.meters (length / 2))
-
-        position u v =
-            if v > 4 then
-                position u (9 - v) |> Point3d.mirrorAcross midplane
-
-            else
-                case v of
-                    0 ->
-                        radial (angle u) 0 0
-
-                    1 ->
-                        radial (angle u) (radius - d) 0
-
-                    2 ->
-                        radial (angle u) (radius - d / 2) 0
-
-                    3 ->
-                        radial (angle u) radius (d / 2)
-
-                    _ ->
-                        radial (angle u) radius d
-    in
-    Mesh.indexedBall nrSegments 9 position |> convertMesh
-
-
-ball : TriangularMesh View3d.Vertex
-ball =
-    let
-        positions =
-            [ ( ( 0, 0 ), Point3d.meters 0 0 -1 )
-            , ( ( 0, 1 ), Point3d.meters 1 0 0 )
-            , ( ( 1, 1 ), Point3d.meters 0 1 0 )
-            , ( ( 2, 1 ), Point3d.meters -1 0 0 )
-            , ( ( 3, 1 ), Point3d.meters 0 -1 0 )
-            , ( ( 0, 2 ), Point3d.meters 0 0 1 )
-            ]
-                |> Dict.fromList
-
-        getPosition =
-            flip Dict.get positions
-                >> Maybe.withDefault (Point3d.meters 0 0 0)
+        makeVertex u v =
+            Point3d.meters u v (3 * ((u - 0.5) ^ 2 + (v - 0.5) ^ 2))
 
         subD =
             Mesh.subdivideSmoothly (always False) identity (always identity)
+
+        pushVertex ( point, normal ) =
+            ( Point3d.translateBy
+                (Vector3d.scaleTo (Length.meters 0.05) normal)
+                point
+            , normal
+            )
     in
-    Mesh.indexedBall 4 2 Tuple.pair
-        |> Mesh.mapVertices getPosition
+    Mesh.grid 2 2 makeVertex
         |> subD
+        |> subD
+        |> Mesh.withNormals identity Tuple.pair
+        |> Mesh.extrude pushVertex
+        |> Mesh.mapVertices Tuple.first
         |> subD
         |> subD
         |> convertMesh
@@ -207,8 +164,3 @@ pointToVec3 point =
 normalToVec3 : Vector3d units coordinates -> Vec3
 normalToVec3 normal =
     Math.Vector3.fromRecord (Vector3d.unwrap normal)
-
-
-flip : (a -> b -> c) -> b -> a -> c
-flip f a b =
-    f b a
