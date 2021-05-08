@@ -1,5 +1,6 @@
 module Main exposing (main)
 
+import Array
 import Browser
 import Color
 import Html
@@ -122,26 +123,49 @@ sheet : TriangularMesh View3d.Vertex
 sheet =
     let
         makeVertex u v =
-            Point3d.meters u v (3 * ((u - 0.5) ^ 2 + (v - 0.5) ^ 2))
+            let
+                a =
+                    v * 2 * pi
+
+                r =
+                    u + 1
+            in
+            Point3d.meters (r * cos a) (r * sin a) (u * cos a)
 
         subD =
             Mesh.subdivideSmoothly (always False) identity (always identity)
 
         pushVertex ( point, normal ) =
             ( Point3d.translateBy
-                (Vector3d.scaleTo (Length.meters 0.05) normal)
+                (Vector3d.scaleTo (Length.meters 0.2) normal)
                 point
             , normal
             )
+
+        isolateQuads mesh =
+            let
+                quads =
+                    Mesh.faceVertices mesh
+
+                verts =
+                    List.concat quads
+                        |> Array.fromList
+
+                faces =
+                    List.range 0 (List.length quads - 1)
+                        |> List.map (\i -> List.range (4 * i) (4 * i + 3))
+            in
+            Mesh.fromOrientedFaces verts faces
+                |> Result.withDefault Mesh.empty
     in
-    Mesh.grid 2 2 makeVertex
+    Mesh.tube 1 4 makeVertex
+        |> subD
         |> subD
         |> subD
         |> Mesh.withNormals identity Tuple.pair
         |> Mesh.extrude pushVertex
         |> Mesh.mapVertices Tuple.first
-        |> subD
-        |> subD
+        |> isolateQuads
         |> convertMesh
 
 
@@ -149,18 +173,8 @@ convertMesh : Mesh.Mesh (Point3d units coords) -> TriangularMesh View3d.Vertex
 convertMesh meshIn =
     let
         makeVertex point normal =
-            { position = pointToVec3 point
-            , normal = normalToVec3 normal
+            { position = Math.Vector3.fromRecord (Point3d.unwrap point)
+            , normal = Math.Vector3.fromRecord (Vector3d.unwrap normal)
             }
     in
     Mesh.withNormals identity makeVertex meshIn |> Mesh.toTriangularMesh
-
-
-pointToVec3 : Point3d units coordinates -> Vec3
-pointToVec3 point =
-    Math.Vector3.fromRecord (Point3d.unwrap point)
-
-
-normalToVec3 : Vector3d units coordinates -> Vec3
-normalToVec3 normal =
-    Math.Vector3.fromRecord (Vector3d.unwrap normal)
