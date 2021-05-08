@@ -6,11 +6,11 @@ import Color
 import Html
 import Length
 import Math.Matrix4 as Mat4
-import Math.Vector3 exposing (Vec3)
+import Math.Vector3
 import Mesh
 import Point3d exposing (Point3d)
 import TriangularMesh exposing (TriangularMesh)
-import Vector3d exposing (Vector3d)
+import Vector3d
 import View3d
 
 
