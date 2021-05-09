@@ -1,4 +1,4 @@
-module View3d.Mesh exposing
+module View3d.Picker exposing
     ( Triangles
     , mappedRayMeshIntersection
     )

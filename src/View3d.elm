@@ -37,7 +37,7 @@ import Set exposing (Set)
 import TriangularMesh exposing (TriangularMesh)
 import View3d.Camera as Camera
 import View3d.EffectsRenderer as EffectsRenderer
-import View3d.Mesh as Mesh
+import View3d.Picker as Picker
 import View3d.SceneRenderer as SceneRenderer
 import View3d.Types as Types
 import WebGL
@@ -74,7 +74,7 @@ type alias Position =
 type alias PickingInfo =
     { centroid : Vec3
     , radius : Float
-    , pickingMesh : Mesh.Triangles Vec3
+    , pickingMesh : Picker.Triangles Vec3
     }
 
 
@@ -119,7 +119,7 @@ init =
         }
 
 
-meshForPicking : TriangularMesh Vertex -> Mesh.Triangles Vec3
+meshForPicking : TriangularMesh Vertex -> Picker.Triangles Vec3
 meshForPicking mesh =
     mesh
         |> TriangularMesh.mapVertices .position
@@ -167,7 +167,7 @@ pick :
 pick ray pdata scene =
     let
         intersect =
-            Mesh.mappedRayMeshIntersection ray.origin ray.direction
+            Picker.mappedRayMeshIntersection ray.origin ray.direction
 
         step item bestSoFar =
             let
