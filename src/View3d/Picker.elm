@@ -1,14 +1,15 @@
 module View3d.Picker exposing
     ( Mesh
     , convertMesh
-    , mappedRayMeshIntersection
+    , pick
     )
 
-import Array
+import Array exposing (Array)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import TriangularMesh exposing (TriangularMesh)
-import View3d.Types as Types
+import View3d.Camera as Camera
+import View3d.Types as Types exposing (Instance)
 
 
 type alias Mesh =
@@ -93,15 +94,9 @@ rayIntersectsSphere orig dir center radius =
     Vec3.lengthSquared t - lambda ^ 2 <= radius ^ 2
 
 
-rayMeshIntersection :
-    Vec3
-    -> Vec3
-    -> List ( Vec3, Vec3, Vec3 )
-    -> Vec3
-    -> Float
-    -> Maybe Float
-rayMeshIntersection orig dir tris center radius =
-    if rayIntersectsSphere orig dir center radius then
+rayMeshIntersection : Vec3 -> Vec3 -> Mesh -> Maybe Float
+rayMeshIntersection orig dir mesh =
+    if rayIntersectsSphere orig dir mesh.centroid mesh.radius then
         let
             step triangle bestSoFar =
                 case rayTriangleIntersection orig dir triangle of
@@ -123,27 +118,20 @@ rayMeshIntersection orig dir tris center radius =
             intersect =
                 List.foldl step Nothing
         in
-        intersect tris
+        intersect mesh.triangles
 
     else
         Nothing
 
 
-mappedRayMeshIntersection :
-    Vec3
-    -> Vec3
-    -> Mat4
-    -> List ( Vec3, Vec3, Vec3 )
-    -> Vec3
-    -> Float
-    -> Maybe Float
-mappedRayMeshIntersection orig dir mat tris center radius =
+intersection : Camera.Ray -> Mat4 -> Mesh -> Maybe Float
+intersection ray mat mesh =
     let
         target =
-            Vec3.add orig dir
+            Vec3.add ray.origin ray.direction
 
         mappedOrig =
-            Mat4.transform mat orig
+            Mat4.transform mat ray.origin
 
         mappedTarget =
             Mat4.transform mat target
@@ -154,5 +142,38 @@ mappedRayMeshIntersection orig dir mat tris center radius =
         mappedDir =
             Vec3.scale factor (Vec3.sub mappedTarget mappedOrig)
     in
-    rayMeshIntersection mappedOrig mappedDir tris center radius
+    rayMeshIntersection mappedOrig mappedDir mesh
         |> Maybe.map ((*) factor)
+
+
+pick : Camera.Ray -> Array Mesh -> List Instance -> Maybe ( Int, Int )
+pick ray pdata scene =
+    let
+        step item bestSoFar =
+            let
+                intersectionDistance =
+                    Maybe.map2
+                        (intersection ray)
+                        (Mat4.inverse item.transform)
+                        (Array.get item.idxMesh pdata)
+                        |> Maybe.andThen identity
+            in
+            case intersectionDistance of
+                Nothing ->
+                    bestSoFar
+
+                Just tNew ->
+                    case bestSoFar of
+                        Nothing ->
+                            Just ( tNew, item.idxMesh, item.idxInstance )
+
+                        Just ( tOld, _, _ ) ->
+                            if tNew < tOld then
+                                Just ( tNew, item.idxMesh, item.idxInstance )
+
+                            else
+                                bestSoFar
+    in
+    scene
+        |> List.foldl step Nothing
+        |> Maybe.map (\( _, idxMesh, idxInstance ) -> ( idxMesh, idxInstance ))

@@ -112,56 +112,6 @@ init =
         }
 
 
-pick :
-    Camera.Ray
-    -> Array Picker.Mesh
-    -> List Instance
-    -> Maybe ( Int, Int )
-pick ray pdata scene =
-    let
-        intersect =
-            Picker.mappedRayMeshIntersection ray.origin ray.direction
-
-        step item bestSoFar =
-            let
-                mat =
-                    Mat4.inverse item.transform
-
-                pinfo =
-                    Array.get item.idxMesh pdata
-
-                mesh =
-                    Maybe.map .triangles pinfo
-
-                intersection =
-                    Maybe.map3
-                        (\t p m -> intersect t m p.centroid p.radius)
-                        mat
-                        pinfo
-                        mesh
-                        |> Maybe.andThen identity
-            in
-            case intersection of
-                Nothing ->
-                    bestSoFar
-
-                Just tNew ->
-                    case bestSoFar of
-                        Nothing ->
-                            Just ( tNew, item.idxMesh, item.idxInstance )
-
-                        Just ( tOld, _, _ ) ->
-                            if tNew < tOld then
-                                Just ( tNew, item.idxMesh, item.idxInstance )
-
-                            else
-                                bestSoFar
-    in
-    scene
-        |> List.foldl step Nothing
-        |> Maybe.map (\( _, idxMesh, idxInstance ) -> ( idxMesh, idxInstance ))
-
-
 
 -- SUBSCRIPTIONS
 
@@ -334,7 +284,7 @@ pickingOutcome : Position -> Touch.Keys -> Model -> Outcome
 pickingOutcome pos mods (Model model) =
     Camera.pickingRay pos model.cameraState model.center (3 * model.radius)
         |> Maybe.andThen
-            (\r -> pick r model.pickingMeshes model.scene)
+            (\r -> Picker.pick r model.pickingMeshes model.scene)
         |> Maybe.map
             (\( m, i ) -> Pick mods { meshIndex = m, instanceIndex = i })
         |> Maybe.withDefault
@@ -450,12 +400,9 @@ setScene :
 setScene maybeMeshes instances (Model model) =
     let
         modelWithMeshes =
-            case maybeMeshes of
-                Nothing ->
-                    model
-
-                Just meshes ->
-                    setMeshes meshes model
+            maybeMeshes
+                |> Maybe.map (flip setMeshes model)
+                |> Maybe.withDefault model
 
         fixRadius t r =
             let
@@ -656,3 +603,12 @@ onTouchEnd theMsg =
 onTouchCancel : msg -> Html.Attribute msg
 onTouchCancel theMsg =
     Touch.onCancel (\_ -> theMsg)
+
+
+
+-- General Helper Functions
+
+
+flip : (a -> b -> c) -> b -> a -> c
+flip f a b =
+    f b a
