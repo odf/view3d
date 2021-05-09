@@ -71,20 +71,13 @@ type alias Position =
     { x : Float, y : Float }
 
 
-type alias PickingInfo =
-    { centroid : Vec3
-    , radius : Float
-    , pickingMesh : Picker.Triangles Vec3
-    }
-
-
 type alias ModelImpl =
     Types.Model
         { requestRedraw : Bool
         , touchStart : Position
-        , meshesScene3d : Array SceneRenderer.Mesh
-        , meshesWebGLFog : Array EffectsRenderer.Mesh
-        , pickingData : Array PickingInfo
+        , sceneMeshes : Array SceneRenderer.Mesh
+        , effectsMeshes : Array EffectsRenderer.Mesh
+        , pickingMeshes : Array Picker.Mesh
         }
 
 
@@ -113,55 +106,15 @@ init =
         , cameraState = Camera.initialState
         , requestRedraw = False
         , touchStart = { x = 0, y = 0 }
-        , meshesScene3d = Array.empty
-        , meshesWebGLFog = Array.empty
-        , pickingData = Array.empty
+        , sceneMeshes = Array.empty
+        , effectsMeshes = Array.empty
+        , pickingMeshes = Array.empty
         }
-
-
-meshForPicking : TriangularMesh Vertex -> Picker.Triangles Vec3
-meshForPicking mesh =
-    mesh
-        |> TriangularMesh.mapVertices .position
-        |> TriangularMesh.faceVertices
-
-
-centroid : TriangularMesh { a | position : Vec3 } -> Vec3
-centroid mesh =
-    let
-        vertices =
-            TriangularMesh.vertices mesh
-                |> Array.toList
-                |> List.map .position
-
-        n =
-            List.length vertices
-    in
-    vertices
-        |> List.foldl Vec3.add (vec3 0 0 0)
-        |> Vec3.scale (1 / toFloat n)
-
-
-radius : TriangularMesh { a | position : Vec3 } -> Float
-radius mesh =
-    let
-        vertices =
-            TriangularMesh.vertices mesh
-                |> Array.toList
-                |> List.map .position
-
-        c =
-            centroid mesh
-    in
-    vertices
-        |> List.map (\v -> Vec3.distance v c)
-        |> List.maximum
-        |> Maybe.withDefault 0.0
 
 
 pick :
     Camera.Ray
-    -> Array PickingInfo
+    -> Array Picker.Mesh
     -> List Instance
     -> Maybe ( Int, Int )
 pick ray pdata scene =
@@ -178,7 +131,7 @@ pick ray pdata scene =
                     Array.get item.idxMesh pdata
 
                 mesh =
-                    Maybe.map (\p -> p.pickingMesh) pinfo
+                    Maybe.map .triangles pinfo
 
                 intersection =
                     Maybe.map3
@@ -381,7 +334,7 @@ pickingOutcome : Position -> Touch.Keys -> Model -> Outcome
 pickingOutcome pos mods (Model model) =
     Camera.pickingRay pos model.cameraState model.center (3 * model.radius)
         |> Maybe.andThen
-            (\r -> pick r model.pickingData model.scene)
+            (\r -> pick r model.pickingMeshes model.scene)
         |> Maybe.map
             (\( m, i ) -> Pick mods { meshIndex = m, instanceIndex = i })
         |> Maybe.withDefault
@@ -479,27 +432,13 @@ setSize size (Model model) =
 
 setMeshes : List (TriangularMesh Vertex) -> ModelImpl -> ModelImpl
 setMeshes meshes model =
-    let
-        meshesScene3d =
-            List.map SceneRenderer.convertMesh meshes
-
-        meshesWebGLFog =
-            List.map EffectsRenderer.convertMesh meshes
-
-        pickingData =
-            List.map
-                (\mesh ->
-                    { pickingMesh = meshForPicking mesh
-                    , centroid = centroid mesh
-                    , radius = radius mesh
-                    }
-                )
-                meshes
-    in
     { model
-        | meshesScene3d = Array.fromList meshesScene3d
-        , meshesWebGLFog = Array.fromList meshesWebGLFog
-        , pickingData = Array.fromList pickingData
+        | sceneMeshes =
+            List.map SceneRenderer.convertMesh meshes |> Array.fromList
+        , effectsMeshes =
+            List.map EffectsRenderer.convertMesh meshes |> Array.fromList
+        , pickingMeshes =
+            List.map Picker.convertMesh meshes |> Array.fromList
     }
 
 
@@ -530,7 +469,7 @@ setScene maybeMeshes instances (Model model) =
                 |> Maybe.withDefault 0
 
         boundingData =
-            modelWithMeshes.pickingData
+            modelWithMeshes.pickingMeshes
                 |> Array.toList
                 |> List.indexedMap
                     (\index p ->
@@ -612,10 +551,10 @@ view toMsg (Model model) options =
             EffectsRenderer.backgroundEntity options.backgroundColor
 
         sceneEntities =
-            SceneRenderer.entities model.meshesScene3d model options
+            SceneRenderer.entities model.sceneMeshes model options
 
         fogEntities =
-            EffectsRenderer.entities model.meshesWebGLFog model options
+            EffectsRenderer.entities model.effectsMeshes model options
 
         entities =
             bgEntity :: sceneEntities ++ fogEntities

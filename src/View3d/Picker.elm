@@ -1,14 +1,54 @@
 module View3d.Picker exposing
-    ( Triangles
+    ( Mesh
+    , convertMesh
     , mappedRayMeshIntersection
     )
 
+import Array
 import Math.Matrix4 as Mat4 exposing (Mat4)
-import Math.Vector3 as Vec3 exposing (Vec3)
+import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import TriangularMesh exposing (TriangularMesh)
+import View3d.Types as Types
 
 
-type alias Triangles vertex =
-    List ( vertex, vertex, vertex )
+type alias Mesh =
+    { centroid : Vec3
+    , radius : Float
+    , triangles : List ( Vec3, Vec3, Vec3 )
+    }
+
+
+convertMesh : TriangularMesh Types.Vertex -> Mesh
+convertMesh mesh =
+    let
+        triangles =
+            mesh
+                |> TriangularMesh.mapVertices .position
+                |> TriangularMesh.faceVertices
+
+        vertices =
+            TriangularMesh.vertices mesh
+                |> Array.toList
+                |> List.map .position
+
+        n =
+            List.length vertices
+
+        centroid =
+            vertices
+                |> List.foldl Vec3.add (vec3 0 0 0)
+                |> Vec3.scale (1 / toFloat n)
+
+        radius =
+            vertices
+                |> List.map (\v -> Vec3.distance v centroid)
+                |> List.maximum
+                |> Maybe.withDefault 0.0
+    in
+    { triangles = triangles
+    , centroid = centroid
+    , radius = radius
+    }
 
 
 
@@ -56,7 +96,7 @@ rayIntersectsSphere orig dir center radius =
 rayMeshIntersection :
     Vec3
     -> Vec3
-    -> Triangles Vec3
+    -> List ( Vec3, Vec3, Vec3 )
     -> Vec3
     -> Float
     -> Maybe Float
@@ -93,7 +133,7 @@ mappedRayMeshIntersection :
     Vec3
     -> Vec3
     -> Mat4
-    -> Triangles Vec3
+    -> List ( Vec3, Vec3, Vec3 )
     -> Vec3
     -> Float
     -> Maybe Float
