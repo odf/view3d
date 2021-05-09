@@ -12,7 +12,6 @@ import Math.Vector3 exposing (Vec3, vec3)
 import Maybe
 import TriangularMesh exposing (TriangularMesh)
 import View3d.Camera as Camera
-import View3d.Mesh as Mesh
 import View3d.Types as Types
 import WebGL
 import WebGL.Settings
@@ -62,11 +61,7 @@ extend v x y z =
 
 convertMeshForRenderer : TriangularMesh Types.Vertex -> Mesh
 convertMeshForRenderer mesh =
-    let
-        triangles =
-            Mesh.resolved mesh
-    in
-    triangles
+    TriangularMesh.faceVertices mesh
         |> List.map
             (\( u, v, w ) ->
                 ( extend u 1 0 0, extend v 1 1 0, extend w 1 0 1 )

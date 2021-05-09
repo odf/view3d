@@ -1,39 +1,14 @@
 module View3d.Mesh exposing
     ( Triangles
     , mappedRayMeshIntersection
-    , resolved
     )
 
-import Array
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3)
-import TriangularMesh exposing (TriangularMesh)
 
 
 type alias Triangles vertex =
     List ( vertex, vertex, vertex )
-
-
-triangulate : List vertex -> List ( vertex, vertex, vertex )
-triangulate corners =
-    case corners of
-        u :: v :: w :: rest ->
-            ( w, u, v ) :: List.map2 (\r s -> ( u, r, s )) (w :: rest) rest
-
-        _ ->
-            []
-
-
-resolved : TriangularMesh vertex -> Triangles vertex
-resolved mesh =
-    let
-        vs =
-            TriangularMesh.vertices mesh
-    in
-    TriangularMesh.faceIndices mesh
-        |> List.map (\( i, j, k ) -> [ i, j, k ])
-        |> List.map (List.filterMap (\i -> Array.get i vs))
-        |> List.concatMap triangulate
 
 
 

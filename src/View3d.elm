@@ -123,7 +123,7 @@ meshForPicking : TriangularMesh Vertex -> Mesh.Triangles Vec3
 meshForPicking mesh =
     mesh
         |> TriangularMesh.mapVertices .position
-        |> Mesh.resolved
+        |> TriangularMesh.faceVertices
 
 
 centroid : TriangularMesh { a | position : Vec3 } -> Vec3
