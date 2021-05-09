@@ -1,4 +1,4 @@
-module View3d.RendererWebGLEffects exposing
+module View3d.EffectsRenderer exposing
     ( Mesh
     , backgroundEntity
     , convertMeshForRenderer
@@ -10,14 +10,14 @@ import Color exposing (Color)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 exposing (Vec3, vec3)
 import Maybe
+import TriangularMesh exposing (TriangularMesh)
 import View3d.Camera as Camera
 import View3d.Mesh as Mesh
-import View3d.RendererCommon exposing (..)
+import View3d.Types as Types
 import WebGL
 import WebGL.Settings
 import WebGL.Settings.Blend as Blend
 import WebGL.Settings.DepthTest as DepthTest
-import TriangularMesh exposing (TriangularMesh)
 
 
 type alias VertexExtended =
@@ -52,7 +52,7 @@ type alias Varyings =
     }
 
 
-extend : Vertex -> Float -> Float -> Float -> VertexExtended
+extend : Types.Vertex -> Float -> Float -> Float -> VertexExtended
 extend v x y z =
     { position = v.position
     , normal = v.normal
@@ -60,7 +60,7 @@ extend v x y z =
     }
 
 
-convertMeshForRenderer : TriangularMesh Vertex -> Mesh
+convertMeshForRenderer : TriangularMesh Types.Vertex -> Mesh
 convertMeshForRenderer mesh =
     let
         triangles =
@@ -83,7 +83,7 @@ colorAsVec3 color =
     vec3 red green blue
 
 
-entities : Array Mesh -> Model a -> Options -> List WebGL.Entity
+entities : Array Mesh -> Types.Model a -> Types.Options -> List WebGL.Entity
 entities meshes model options =
     let
         radius =

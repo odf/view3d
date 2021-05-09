@@ -1,4 +1,4 @@
-module View3d.RendererScene3d exposing
+module View3d.SceneRenderer exposing
     ( Mesh
     , convertMeshForRenderer
     , entities
@@ -26,8 +26,7 @@ import Set
 import TriangularMesh exposing (TriangularMesh)
 import Vector3d exposing (Vector3d)
 import View3d.Camera as Camera
-import View3d.Mesh as Mesh
-import View3d.RendererCommon exposing (..)
+import View3d.Types as Types
 import Viewpoint3d
 import WebGL
 
@@ -56,7 +55,9 @@ asUnitlessDirection p =
     Vector3d.unitless (Vec3.getX p) (Vec3.getY p) (Vec3.getZ p)
 
 
-convertSurface : TriangularMesh Vertex -> Scene3d.Mesh.Uniform WorldCoordinates
+convertSurface :
+    TriangularMesh Types.Vertex
+    -> Scene3d.Mesh.Uniform WorldCoordinates
 convertSurface mesh =
     let
         verts =
@@ -72,7 +73,7 @@ convertSurface mesh =
         |> Scene3d.Mesh.indexedFaces
 
 
-convertMeshForRenderer : TriangularMesh Vertex -> Mesh
+convertMeshForRenderer : TriangularMesh Types.Vertex -> Mesh
 convertMeshForRenderer mesh =
     let
         surface =
@@ -88,7 +89,7 @@ convertMeshForRenderer mesh =
 
 convertCamera :
     Camera.State
-    -> Options
+    -> Types.Options
     -> Camera3d.Camera3d Length.Meters coords
 convertCamera camState options =
     let
@@ -305,7 +306,7 @@ wireframeBox center dimX dimY dimZ =
         ]
 
 
-entities : Array Mesh -> Model a -> Options -> List WebGL.Entity
+entities : Array Mesh -> Types.Model a -> Types.Options -> List WebGL.Entity
 entities meshes model options =
     let
         convert { material, transform, idxMesh, idxInstance } mesh =

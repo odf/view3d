@@ -1,4 +1,4 @@
-module View3d.RendererCommon exposing
+module View3d.Types exposing
     ( FrameSize
     , Instance
     , Material

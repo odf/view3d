@@ -36,10 +36,10 @@ import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Set exposing (Set)
 import TriangularMesh exposing (TriangularMesh)
 import View3d.Camera as Camera
+import View3d.EffectsRenderer as EffectsRenderer
 import View3d.Mesh as Mesh
-import View3d.RendererCommon as RendererCommon
-import View3d.RendererScene3d as RendererScene3d
-import View3d.RendererWebGLEffects as RendererEffects
+import View3d.SceneRenderer as SceneRenderer
+import View3d.Types as Types
 import WebGL
 
 
@@ -48,19 +48,19 @@ import WebGL
 
 
 type alias Vertex =
-    RendererCommon.Vertex
+    Types.Vertex
 
 
 type alias Instance =
-    RendererCommon.Instance
+    Types.Instance
 
 
 type alias Material =
-    RendererCommon.Material
+    Types.Material
 
 
 type alias Options =
-    RendererCommon.Options
+    Types.Options
 
 
 
@@ -79,11 +79,11 @@ type alias PickingInfo =
 
 
 type alias ModelImpl =
-    RendererCommon.Model
+    Types.Model
         { requestRedraw : Bool
         , touchStart : Position
-        , meshesScene3d : Array RendererScene3d.Mesh
-        , meshesWebGLFog : Array RendererEffects.Mesh
+        , meshesScene3d : Array SceneRenderer.Mesh
+        , meshesWebGLFog : Array EffectsRenderer.Mesh
         , pickingData : Array PickingInfo
         }
 
@@ -472,7 +472,7 @@ encompass (Model model) =
     updateCamera (Camera.encompass model.center model.radius) (Model model)
 
 
-setSize : RendererCommon.FrameSize -> Model -> Model
+setSize : Types.FrameSize -> Model -> Model
 setSize size (Model model) =
     updateCamera (Camera.setFrameSize size) (Model { model | size = size })
 
@@ -482,12 +482,12 @@ setMeshes meshes model =
     let
         meshesScene3d =
             List.map
-                (\mesh -> RendererScene3d.convertMeshForRenderer mesh)
+                (\mesh -> SceneRenderer.convertMeshForRenderer mesh)
                 meshes
 
         meshesWebGLFog =
             List.map
-                (\mesh -> RendererEffects.convertMeshForRenderer mesh)
+                (\mesh -> EffectsRenderer.convertMeshForRenderer mesh)
                 meshes
 
         pickingData =
@@ -613,13 +613,13 @@ view toMsg (Model model) options =
             ]
 
         bgEntity =
-            RendererEffects.backgroundEntity options.backgroundColor
+            EffectsRenderer.backgroundEntity options.backgroundColor
 
         sceneEntities =
-            RendererScene3d.entities model.meshesScene3d model options
+            SceneRenderer.entities model.meshesScene3d model options
 
         fogEntities =
-            RendererEffects.entities model.meshesWebGLFog model options
+            EffectsRenderer.entities model.meshesWebGLFog model options
 
         entities =
             bgEntity :: sceneEntities ++ fogEntities
