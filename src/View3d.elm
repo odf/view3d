@@ -481,14 +481,10 @@ setMeshes : List (TriangularMesh Vertex) -> ModelImpl -> ModelImpl
 setMeshes meshes model =
     let
         meshesScene3d =
-            List.map
-                (\mesh -> SceneRenderer.convertMeshForRenderer mesh)
-                meshes
+            List.map SceneRenderer.convertMesh meshes
 
         meshesWebGLFog =
-            List.map
-                (\mesh -> EffectsRenderer.convertMeshForRenderer mesh)
-                meshes
+            List.map EffectsRenderer.convertMesh meshes
 
         pickingData =
             List.map

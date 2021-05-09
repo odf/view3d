@@ -1,7 +1,7 @@
 module View3d.EffectsRenderer exposing
     ( Mesh
     , backgroundEntity
-    , convertMeshForRenderer
+    , convertMesh
     , entities
     )
 
@@ -59,8 +59,8 @@ extend v x y z =
     }
 
 
-convertMeshForRenderer : TriangularMesh Types.Vertex -> Mesh
-convertMeshForRenderer mesh =
+convertMesh : TriangularMesh Types.Vertex -> Mesh
+convertMesh mesh =
     TriangularMesh.faceVertices mesh
         |> List.map
             (\( u, v, w ) ->

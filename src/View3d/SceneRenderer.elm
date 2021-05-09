@@ -1,6 +1,6 @@
 module View3d.SceneRenderer exposing
     ( Mesh
-    , convertMeshForRenderer
+    , convertMesh
     , entities
     )
 
@@ -29,10 +29,6 @@ import View3d.Camera as Camera
 import View3d.Types as Types
 import Viewpoint3d
 import WebGL
-
-
-
--- The mesh type and mesh generating functions are placeholders for now
 
 
 type WorldCoordinates
@@ -73,8 +69,8 @@ convertSurface mesh =
         |> Scene3d.Mesh.indexedFaces
 
 
-convertMeshForRenderer : TriangularMesh Types.Vertex -> Mesh
-convertMeshForRenderer mesh =
+convertMesh : TriangularMesh Types.Vertex -> Mesh
+convertMesh mesh =
     let
         surface =
             convertSurface mesh
