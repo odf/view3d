@@ -216,68 +216,67 @@ subscriptions toMsg (Model model) =
 
 update : Msg -> Model -> ( Model, Outcome )
 update msg (Model model) =
+    ( updateModel msg model, outcome msg model )
+
+
+updateModel : Msg -> ModelImpl -> Model
+updateModel msg model =
     case msg of
         FrameMsg time ->
-            ( updateCamera (Camera.nextFrame time)
+            updateCamera
+                (Camera.nextFrame time)
                 (Model { model | requestRedraw = False })
-            , None
-            )
 
         MouseDownMsg pos posRel _ buttons ->
             if buttons.right then
-                ( Model model, None )
+                Model model
 
             else
-                ( { model | touchStart = posRel }
-                    |> Model
-                    |> updateCamera (Camera.startDragging pos)
-                , None
-                )
+                updateCamera
+                    (Camera.startDragging pos)
+                    (Model { model | touchStart = posRel })
 
-        MouseUpMsg _ modifiers ->
-            let
-                outcome =
-                    if Camera.wasDragged model.cameraState then
-                        None
-
-                    else
-                        pickingOutcome model.touchStart modifiers (Model model)
-            in
-            ( updateCamera Camera.finishDragging (Model model), outcome )
+        MouseUpMsg _ _ ->
+            updateCamera Camera.finishDragging (Model model)
 
         MouseMoveMsg pos modifiers ->
-            ( updateCamera
+            updateCamera
                 (Camera.dragTo pos modifiers.shift)
                 (Model model)
-            , None
-            )
 
         TouchStartMsg posList offset ->
-            ( touchStartUpdate posList offset (Model model), None )
+            touchStartUpdate posList offset (Model model)
 
         TouchMoveMsg posList ->
-            ( touchMoveUpdate posList (Model model), None )
+            touchMoveUpdate posList (Model model)
 
         TouchEndMsg ->
-            let
-                outcome =
-                    if Camera.wasDragged model.cameraState then
-                        None
-
-                    else
-                        pickingOutcome
-                            model.touchStart
-                            { alt = True, ctrl = False, shift = False }
-                            (Model model)
-            in
-            ( updateCamera Camera.finishDragging (Model model), outcome )
+            updateCamera Camera.finishDragging (Model model)
 
         WheelMsg val modifiers ->
-            ( updateCamera
+            updateCamera
                 (Camera.updateZoom (wheelZoomFactor val) modifiers.shift)
                 (Model model)
-            , None
-            )
+
+
+outcome : Msg -> ModelImpl -> Outcome
+outcome msg model =
+    if Camera.wasDragged model.cameraState then
+        None
+
+    else
+        case msg of
+            MouseUpMsg _ modifiers ->
+                pickingOutcome model.touchStart modifiers (Model model)
+
+            TouchEndMsg ->
+                pickingOutcome
+                    model.touchStart
+                    { alt = True, ctrl = False, shift = False }
+                    (Model model)
+
+            _ ->
+                None
 
 
 pickingOutcome : Position -> Touch.Keys -> Model -> Outcome
@@ -291,18 +290,21 @@ pickingOutcome pos mods (Model model) =
             (PickEmpty mods)
 
 
+avg : List Float -> Float
+avg xs =
+    case xs of
+        [] ->
+            0
+
+        _ ->
+            List.foldl (+) 0 xs / (List.length xs |> toFloat)
+
+
 centerPosition : List Position -> Position
 centerPosition posList =
-    let
-        n =
-            List.length posList |> max 1 |> toFloat
-
-        sum =
-            List.foldl (\p q -> { x = p.x + q.x, y = p.y + q.y })
-                { x = 0, y = 0 }
-                posList
-    in
-    { x = sum.x / n, y = sum.y / n }
+    { x = List.map .x posList |> avg
+    , y = List.map .y posList |> avg
+    }
 
 
 touchStartUpdate : List Position -> Position -> Model -> Model
@@ -392,18 +394,9 @@ setMeshes meshes model =
     }
 
 
-setScene :
-    Maybe (List (TriangularMesh Vertex))
-    -> List Instance
-    -> Model
-    -> Model
-setScene maybeMeshes instances (Model model) =
+boundingSphere : Array Picker.Mesh -> List Instance -> ( Vec3, Float )
+boundingSphere meshes instances =
     let
-        modelWithMeshes =
-            maybeMeshes
-                |> Maybe.map (flip setMeshes model)
-                |> Maybe.withDefault model
-
         fixRadius t r =
             let
                 o =
@@ -415,32 +408,47 @@ setScene maybeMeshes instances (Model model) =
                 |> List.maximum
                 |> Maybe.withDefault 0
 
-        boundingData =
-            modelWithMeshes.pickingMeshes
-                |> Array.toList
-                |> List.indexedMap
-                    (\index p ->
-                        instances
-                            |> List.filter (\inst -> inst.idxMesh == index)
-                            |> List.map
-                                (\{ transform } ->
-                                    ( Mat4.transform transform p.centroid
-                                    , fixRadius transform p.radius
-                                    )
-                                )
+        boundingSpheresForMesh index mesh =
+            List.filter (.idxMesh >> (==) index) instances
+                |> List.map
+                    (\{ transform } ->
+                        ( Mat4.transform transform mesh.centroid
+                        , fixRadius transform mesh.radius
+                        )
                     )
+
+        boundingSpheres =
+            Array.toList meshes
+                |> List.indexedMap boundingSpheresForMesh
                 |> List.concat
 
         sceneCenter =
-            boundingData
+            boundingSpheres
                 |> List.foldl (\( c, _ ) sum -> Vec3.add sum c) (vec3 0 0 0)
-                |> Vec3.scale (1 / toFloat (List.length boundingData))
+                |> Vec3.scale (1 / toFloat (List.length boundingSpheres))
 
         sceneRadius =
-            boundingData
+            boundingSpheres
                 |> List.map (\( c, r ) -> r + Vec3.distance sceneCenter c)
                 |> List.maximum
                 |> Maybe.withDefault 0.0
+    in
+    ( sceneCenter, sceneRadius )
+
+
+setScene :
+    Maybe (List (TriangularMesh Vertex))
+    -> List Instance
+    -> Model
+    -> Model
+setScene maybeMeshes instances (Model model) =
+    let
+        modelWithMeshes =
+            Maybe.map (flip setMeshes model) maybeMeshes
+                |> Maybe.withDefault model
+
+        ( sceneCenter, sceneRadius ) =
+            boundingSphere modelWithMeshes.pickingMeshes instances
     in
     Model
         { modelWithMeshes
