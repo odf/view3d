@@ -1,9 +1,7 @@
 module Main exposing (main)
 
-import Array
 import Browser
 import Color
-import Dict
 import Html
 import Length
 import Math.Matrix4 as Mat4
@@ -170,45 +168,12 @@ sheet =
     List.map
         (\predFn ->
             baseMesh
-                |> filterFaces (checkTags predFn)
+                |> Mesh.filterFaces (checkTags predFn)
                 |> Mesh.mapVertices (\( p, _, _ ) -> p)
                 |> subD
                 |> convertMesh
         )
         [ (==) 1, (==) 2 ]
-
-
-filterFaces : (List vertex -> Bool) -> Mesh.Mesh vertex -> Mesh.Mesh vertex
-filterFaces testFace mesh =
-    let
-        verts =
-            Mesh.vertices mesh
-
-        isGoodFace =
-            List.filterMap (flip Array.get verts) >> testFace
-
-        goodFaces =
-            Mesh.faceIndices mesh |> List.filter isGoodFace
-
-        keptIndices =
-            List.concat goodFaces |> Set.fromList |> Set.toList
-
-        indexMap =
-            List.indexedMap (\i v -> ( v, i )) keptIndices
-                |> Dict.fromList
-
-        mapFace =
-            List.filterMap (flip Dict.get indexMap)
-
-        vertsOut =
-            List.filterMap (flip Array.get verts) keptIndices
-                |> Array.fromList
-
-        facesOut =
-            List.map mapFace goodFaces
-    in
-    Mesh.fromOrientedFaces vertsOut facesOut
-        |> Result.withDefault Mesh.empty
 
 
 convertMesh : Mesh.Mesh (Point3d units coords) -> TriangularMesh View3d.Vertex
@@ -220,8 +185,3 @@ convertMesh meshIn =
             }
     in
     Mesh.withNormals identity makeVertex meshIn |> Mesh.toTriangularMesh
-
-
-flip : (c -> b -> a) -> b -> c -> a
-flip f x y =
-    f y x
