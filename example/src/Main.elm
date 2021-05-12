@@ -109,8 +109,11 @@ geometry _ =
 
         color i =
             case i of
-                0 -> Color.hsl 0.13 0.9 0.7
-                _ -> Color.hsl 0.0 0.6 0.5
+                0 ->
+                    Color.hsl 0.13 0.9 0.7
+
+                _ ->
+                    Color.hsl 0.0 0.6 0.5
 
         inst i =
             { material =
@@ -123,7 +126,7 @@ geometry _ =
             , idxInstance = 0
             }
     in
-    ( meshes, [ inst 0, inst 1] )
+    ( meshes, [ inst 0, inst 1 ] )
 
 
 sheet : List (TriangularMesh View3d.Vertex)
@@ -150,9 +153,8 @@ sheet =
             , tag + 1
             )
 
-        checkTags predFn face verts =
-            List.filterMap (flip Array.get verts) face
-                |> List.map (\( _, _, t ) -> t)
+        checkTags predFn face =
+            List.map (\( _, _, t ) -> t) face
                 |> Set.fromList
                 |> Set.size
                 |> predFn
@@ -168,7 +170,7 @@ sheet =
     List.map
         (\predFn ->
             baseMesh
-                |> extractFaces (checkTags predFn)
+                |> filterFaces (checkTags predFn)
                 |> Mesh.mapVertices (\( p, _, _ ) -> p)
                 |> subD
                 |> convertMesh
@@ -176,17 +178,17 @@ sheet =
         [ (==) 1, (==) 2 ]
 
 
-extractFaces :
-    (List Int -> Array.Array vertex -> Bool)
-    -> Mesh.Mesh vertex
-    -> Mesh.Mesh vertex
-extractFaces testFace mesh =
+filterFaces : (List vertex -> Bool) -> Mesh.Mesh vertex -> Mesh.Mesh vertex
+filterFaces testFace mesh =
     let
         verts =
             Mesh.vertices mesh
 
+        isGoodFace =
+            List.filterMap (flip Array.get verts) >> testFace
+
         goodFaces =
-            Mesh.faceIndices mesh |> List.filter (flip testFace verts)
+            Mesh.faceIndices mesh |> List.filter isGoodFace
 
         keptIndices =
             List.concat goodFaces |> Set.fromList
