@@ -3,12 +3,14 @@ module Main exposing (main)
 import Array
 import Browser
 import Color
+import Dict
 import Html
 import Length
 import Math.Matrix4 as Mat4
 import Math.Vector3
 import Mesh
 import Point3d exposing (Point3d)
+import Set
 import TriangularMesh exposing (TriangularMesh)
 import Vector3d
 import View3d
@@ -102,24 +104,29 @@ geometry :
     -> ( List (TriangularMesh View3d.Vertex), List View3d.Instance )
 geometry _ =
     let
-        mesh =
+        meshes =
             sheet
 
-        inst =
+        color i =
+            case i of
+                0 -> Color.hsl 0.13 0.9 0.7
+                _ -> Color.hsl 0.0 0.6 0.5
+
+        inst i =
             { material =
-                { color = Color.hsl 0.13 0.9 0.7
+                { color = color i
                 , roughness = 0.5
                 , metallic = 0.1
                 }
             , transform = Mat4.identity
-            , idxMesh = 0
+            , idxMesh = i
             , idxInstance = 0
             }
     in
-    ( [ mesh ], [ inst ] )
+    ( meshes, [ inst 0, inst 1] )
 
 
-sheet : TriangularMesh View3d.Vertex
+sheet : List (TriangularMesh View3d.Vertex)
 sheet =
     let
         makeVertex u v =
@@ -135,22 +142,70 @@ sheet =
         subD =
             Mesh.subdivideSmoothly (always False) identity (always identity)
 
-        pushVertex ( point, normal ) =
+        pushVertex ( point, normal, tag ) =
             ( Point3d.translateBy
                 (Vector3d.scaleTo (Length.meters 0.2) normal)
                 point
             , normal
+            , tag + 1
             )
+
+        checkTags predFn face verts =
+            List.filterMap (flip Array.get verts) face
+                |> List.map (\( _, _, t ) -> t)
+                |> Set.fromList
+                |> Set.size
+                |> predFn
+
+        baseMesh =
+            Mesh.tube 1 4 makeVertex
+                |> subD
+                |> subD
+                |> subD
+                |> Mesh.withNormals identity (\p n -> ( p, n, 0 ))
+                |> Mesh.extrude pushVertex
     in
-    Mesh.tube 1 4 makeVertex
-        |> subD
-        |> subD
-        |> subD
-        |> Mesh.withNormals identity Tuple.pair
-        |> Mesh.extrude pushVertex
-        |> Mesh.mapVertices Tuple.first
-        |> subD
-        |> convertMesh
+    List.map
+        (\predFn ->
+            baseMesh
+                |> extractFaces (checkTags predFn)
+                |> Mesh.mapVertices (\( p, _, _ ) -> p)
+                |> subD
+                |> convertMesh
+        )
+        [ (==) 1, (==) 2 ]
+
+
+extractFaces :
+    (List Int -> Array.Array vertex -> Bool)
+    -> Mesh.Mesh vertex
+    -> Mesh.Mesh vertex
+extractFaces testFace mesh =
+    let
+        verts =
+            Mesh.vertices mesh
+
+        goodFaces =
+            Mesh.faceIndices mesh |> List.filter (flip testFace verts)
+
+        keptIndices =
+            List.concat goodFaces |> Set.fromList
+
+        indexMap =
+            Set.toList keptIndices
+                |> List.indexedMap (\i v -> ( v, i ))
+                |> Dict.fromList
+
+        vertsOut =
+            List.range 0 (Array.length verts - 1)
+                |> List.filter (flip Set.member keptIndices)
+                |> List.filterMap (flip Array.get verts)
+                |> Array.fromList
+    in
+    Mesh.fromOrientedFaces
+        vertsOut
+        (List.map (List.filterMap (flip Dict.get indexMap)) goodFaces)
+        |> Result.withDefault Mesh.empty
 
 
 convertMesh : Mesh.Mesh (Point3d units coords) -> TriangularMesh View3d.Vertex
@@ -162,3 +217,8 @@ convertMesh meshIn =
             }
     in
     Mesh.withNormals identity makeVertex meshIn |> Mesh.toTriangularMesh
+
+
+flip : (c -> b -> a) -> b -> c -> a
+flip f x y =
+    f y x
