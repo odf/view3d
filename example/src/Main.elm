@@ -141,22 +141,6 @@ sheet =
                 point
             , normal
             )
-
-        isolateQuads mesh =
-            let
-                quads =
-                    Mesh.faceVertices mesh
-
-                verts =
-                    List.concat quads
-                        |> Array.fromList
-
-                faces =
-                    List.range 0 (List.length quads - 1)
-                        |> List.map (\i -> List.range (4 * i) (4 * i + 3))
-            in
-            Mesh.fromOrientedFaces verts faces
-                |> Result.withDefault Mesh.empty
     in
     Mesh.tube 1 4 makeVertex
         |> subD
@@ -165,7 +149,7 @@ sheet =
         |> Mesh.withNormals identity Tuple.pair
         |> Mesh.extrude pushVertex
         |> Mesh.mapVertices Tuple.first
-        |> isolateQuads
+        |> subD
         |> convertMesh
 
 
