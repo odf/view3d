@@ -191,22 +191,23 @@ filterFaces testFace mesh =
             Mesh.faceIndices mesh |> List.filter isGoodFace
 
         keptIndices =
-            List.concat goodFaces |> Set.fromList
+            List.concat goodFaces |> Set.fromList |> Set.toList
 
         indexMap =
-            Set.toList keptIndices
-                |> List.indexedMap (\i v -> ( v, i ))
+            List.indexedMap (\i v -> ( v, i )) keptIndices
                 |> Dict.fromList
 
+        mapFace =
+            List.filterMap (flip Dict.get indexMap)
+
         vertsOut =
-            List.range 0 (Array.length verts - 1)
-                |> List.filter (flip Set.member keptIndices)
-                |> List.filterMap (flip Array.get verts)
+            List.filterMap (flip Array.get verts) keptIndices
                 |> Array.fromList
+
+        facesOut =
+            List.map mapFace goodFaces
     in
-    Mesh.fromOrientedFaces
-        vertsOut
-        (List.map (List.filterMap (flip Dict.get indexMap)) goodFaces)
+    Mesh.fromOrientedFaces vertsOut facesOut
         |> Result.withDefault Mesh.empty
 
 
