@@ -62,6 +62,7 @@ extend v x y z =
 convertMesh : TriangularMesh Types.Vertex -> Mesh
 convertMesh mesh =
     TriangularMesh.faceVertices mesh
+        |> List.map (\(u, v, w) -> (w, u, v))
         |> List.map
             (\( u, v, w ) ->
                 ( extend u 1 0 0, extend v 1 1 0, extend w 1 0 1 )
