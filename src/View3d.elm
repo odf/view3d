@@ -457,12 +457,12 @@ setScene maybeMeshes instances (Model model) =
         }
 
 
-setSelection : Set ( Int, Int ) -> Model -> Model
+setSelection : Set Int -> Model -> Model
 setSelection selected (Model model) =
     Model { model | selected = selected }
 
 
-selection : Model -> Set ( Int, Int )
+selection : Model -> Set Int
 selection (Model model) =
     model.selected
 

@@ -305,10 +305,10 @@ wireframeBox center dimX dimY dimZ =
 entities : Array Mesh -> Types.Model a -> Types.Options -> List WebGL.Entity
 entities meshes model options =
     let
-        convert { material, transform, idxMesh, idxInstance } mesh =
+        convert index { material, transform } mesh =
             let
                 highlight =
-                    Set.member ( idxMesh, idxInstance ) model.selected
+                    Set.member index model.selected
 
                 mOut =
                     if highlight then
@@ -336,10 +336,10 @@ entities meshes model options =
 
         sceneGroup =
             model.scene
-                |> List.map
-                    (\item ->
+                |> List.indexedMap
+                    (\index item ->
                         Array.get item.idxMesh meshes
-                            |> Maybe.map (convert item)
+                            |> Maybe.map (convert index item)
                             |> Maybe.withDefault Scene3d.nothing
                     )
                 |> Scene3d.group

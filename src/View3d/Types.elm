@@ -43,7 +43,7 @@ type alias Model a =
     { a
         | size : FrameSize
         , scene : List Instance
-        , selected : Set ( Int, Int )
+        , selected : Set Int
         , center : Vec3
         , radius : Float
         , cameraState : Camera.State
