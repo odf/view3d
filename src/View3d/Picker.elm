@@ -146,10 +146,10 @@ intersection ray mat mesh =
         |> Maybe.map ((*) factor)
 
 
-pick : Camera.Ray -> Array Mesh -> List Instance -> Maybe ( Int, Int )
+pick : Camera.Ray -> Array Mesh -> List Instance -> Maybe Int
 pick ray pdata scene =
     let
-        step item bestSoFar =
+        step ( index, item ) bestSoFar =
             let
                 intersectionDistance =
                     Maybe.map2
@@ -165,15 +165,16 @@ pick ray pdata scene =
                 Just tNew ->
                     case bestSoFar of
                         Nothing ->
-                            Just ( tNew, item.idxMesh, item.idxInstance )
+                            Just ( tNew, index )
 
-                        Just ( tOld, _, _ ) ->
+                        Just ( tOld, _ ) ->
                             if tNew < tOld then
-                                Just ( tNew, item.idxMesh, item.idxInstance )
+                                Just ( tNew, index )
 
                             else
                                 bestSoFar
     in
     scene
+        |> List.indexedMap Tuple.pair
         |> List.foldl step Nothing
-        |> Maybe.map (\( _, idxMesh, idxInstance ) -> ( idxMesh, idxInstance ))
+        |> Maybe.map Tuple.second

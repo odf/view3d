@@ -284,8 +284,15 @@ pickingOutcome pos mods (Model model) =
     Camera.pickingRay pos model.cameraState model.center (3 * model.radius)
         |> Maybe.andThen
             (\r -> Picker.pick r model.pickingMeshes model.scene)
+        |> Maybe.andThen
+            (\index -> List.drop index model.scene |> List.head)
         |> Maybe.map
-            (\( m, i ) -> Pick mods { meshIndex = m, instanceIndex = i })
+            (\inst ->
+                Pick mods
+                    { meshIndex = inst.idxMesh
+                    , instanceIndex = inst.idxInstance
+                    }
+            )
         |> Maybe.withDefault
             (PickEmpty mods)
 
