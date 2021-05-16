@@ -331,7 +331,7 @@ entities meshes model options =
         sceneGroup =
             model.scene
                 |> List.indexedMap
-                    (\index item ->
+                    (\index (Types.Instance item) ->
                         Array.get item.idxMesh meshes
                             |> Maybe.map (convert index item)
                             |> Maybe.withDefault Scene3d.nothing

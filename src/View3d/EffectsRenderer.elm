@@ -180,7 +180,7 @@ entities meshes model options =
             else
                 model.scene
                     |> List.concatMap
-                        (\item ->
+                        (\(Types.Instance item) ->
                             Array.get item.idxMesh meshes
                                 |> Maybe.map (makeFog item)
                                 |> Maybe.withDefault []
@@ -193,7 +193,7 @@ entities meshes model options =
             else
                 model.scene
                     |> List.concatMap
-                        (\item ->
+                        (\(Types.Instance item) ->
                             Array.get item.idxMesh meshes
                                 |> Maybe.map (makeOutline item)
                                 |> Maybe.withDefault []

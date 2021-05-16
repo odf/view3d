@@ -9,6 +9,7 @@ module View3d exposing
     , defaultOptions
     , encompass
     , init
+    , instance
     , lookAlong
     , requestRedraw
     , rotateBy
@@ -17,6 +18,7 @@ module View3d exposing
     , setSelection
     , setSize
     , subscriptions
+    , transform
     , update
     , view
     )
@@ -31,7 +33,7 @@ import Html.Attributes
 import Html.Events
 import Html.Events.Extra.Touch as Touch
 import Json.Decode as Decode
-import Math.Matrix4 as Mat4
+import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Set exposing (Set)
 import TriangularMesh exposing (TriangularMesh)
@@ -396,7 +398,7 @@ setMeshes meshes model =
 
 
 boundingSphere : Array Picker.Mesh -> List Instance -> ( Vec3, Float )
-boundingSphere meshes instances =
+boundingSphere meshes scene =
     let
         fixRadius t r =
             let
@@ -409,12 +411,15 @@ boundingSphere meshes instances =
                 |> List.maximum
                 |> Maybe.withDefault 0
 
+        hasIndex index (Types.Instance e) =
+            e.idxMesh == index
+
         boundingSpheresForMesh index mesh =
-            List.filter (.idxMesh >> (==) index) instances
+            List.filter (hasIndex index) scene
                 |> List.map
-                    (\{ transform } ->
-                        ( Mat4.transform transform mesh.centroid
-                        , fixRadius transform mesh.radius
+                    (\(Types.Instance inst) ->
+                        ( Mat4.transform inst.transform mesh.centroid
+                        , fixRadius inst.transform mesh.radius
                         )
                     )
 
@@ -473,6 +478,24 @@ selection (Model model) =
 requestRedraw : Model coords -> Model coords
 requestRedraw (Model model) =
     Model { model | requestRedraw = True }
+
+
+instance : Types.Material -> Int -> Types.Instance
+instance mat idxMesh =
+    Types.Instance
+        { material = mat
+        , transform = Mat4.identity
+        , idxMesh = idxMesh
+        }
+
+
+transform : Mat4 -> Types.Instance -> Types.Instance
+transform mat (Types.Instance inst) =
+    Types.Instance
+        { material = inst.material
+        , transform = Mat4.mul mat inst.transform
+        , idxMesh = inst.idxMesh
+        }
 
 
 

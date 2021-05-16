@@ -1,6 +1,6 @@
 module View3d.Types exposing
     ( FrameSize
-    , Instance
+    , Instance(..)
     , Material
     , Model
     , Options
@@ -34,11 +34,12 @@ type alias Material =
     }
 
 
-type alias Instance =
-    { material : Material
-    , transform : Mat4
-    , idxMesh : Int
-    }
+type Instance
+    = Instance
+        { material : Material
+        , transform : Mat4
+        , idxMesh : Int
+        }
 
 
 type alias Model a =

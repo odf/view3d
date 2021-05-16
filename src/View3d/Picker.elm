@@ -151,15 +151,15 @@ intersection ray mat mesh =
 
 
 pick : Camera.Ray -> Array Mesh -> List Instance -> Maybe Int
-pick ray pdata scene =
+pick ray meshes scene =
     let
-        step ( index, item ) bestSoFar =
+        step ( index, Types.Instance item ) bestSoFar =
             let
                 intersectionDistance =
                     Maybe.map2
                         (intersection ray)
                         (Mat4.inverse item.transform)
-                        (Array.get item.idxMesh pdata)
+                        (Array.get item.idxMesh meshes)
                         |> Maybe.andThen identity
             in
             case intersectionDistance of

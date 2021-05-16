@@ -5,6 +5,7 @@ import Color
 import Html
 import Length
 import Math.Matrix4 as Mat4
+import Math.Vector3 exposing (vec3)
 import Mesh
 import Point3d exposing (Point3d)
 import Set
@@ -120,14 +121,10 @@ geometry _ =
                     Color.hsl 0.0 0.6 0.5
 
         inst i =
-            { material =
-                { color = color i
-                , roughness = 0.5
-                , metallic = 0.1
-                }
-            , transform = Mat4.identity
-            , idxMesh = i
-            }
+            View3d.instance
+                { color = color i, roughness = 0.5, metallic = 0.1 }
+                i
+                |> View3d.transform (Mat4.makeRotate (pi / 2) (vec3 0 1 0))
     in
     ( meshes, [ inst 0, inst 1 ] )
 
