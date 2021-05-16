@@ -35,7 +35,6 @@ type alias Instance =
     { material : Material
     , transform : Mat4
     , idxMesh : Int
-    , idxInstance : Int
     }
 
 
