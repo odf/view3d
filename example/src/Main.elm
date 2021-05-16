@@ -121,7 +121,6 @@ geometry _ =
                 }
             , transform = Mat4.identity
             , idxMesh = i
-            , idxInstance = 0
             }
     in
     ( meshes, [ inst 0, inst 1 ] )
