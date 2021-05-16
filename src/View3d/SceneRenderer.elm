@@ -17,51 +17,46 @@ import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Maybe
 import Point3d exposing (Point3d)
-import Quantity exposing (Unitless)
 import Scene3d
 import Scene3d.Light as Light
 import Scene3d.Material as Material
 import Scene3d.Mesh
 import Set
 import TriangularMesh exposing (TriangularMesh)
-import Vector3d exposing (Vector3d)
+import Vector3d
 import View3d.Camera as Camera
 import View3d.Types as Types
 import Viewpoint3d
 import WebGL
 
 
-type WorldCoordinates
-    = WorldCoordinates
-
-
-type alias Mesh =
-    { surface : Scene3d.Mesh.Uniform WorldCoordinates
-    , shadow : Scene3d.Mesh.Shadow WorldCoordinates
+type alias Mesh coords =
+    { surface : Scene3d.Mesh.Uniform coords
+    , shadow : Scene3d.Mesh.Shadow coords
     }
 
 
-asPointInInches : Vec3 -> Point3d Meters coords
-asPointInInches p =
-    Point3d.inches (Vec3.getX p) (Vec3.getY p) (Vec3.getZ p)
+inMeters : Point3d units coords -> Point3d Meters coords
+inMeters =
+    Point3d.unwrap >> Point3d.unsafe
 
 
-asUnitlessDirection : Vec3 -> Vector3d Unitless coords
-asUnitlessDirection p =
-    Vector3d.unitless (Vec3.getX p) (Vec3.getY p) (Vec3.getZ p)
+asPointInMeters : Vec3 -> Point3d Meters coords
+asPointInMeters p =
+    Point3d.meters (Vec3.getX p) (Vec3.getY p) (Vec3.getZ p)
 
 
 convertSurface :
-    TriangularMesh Types.Vertex
-    -> Scene3d.Mesh.Uniform WorldCoordinates
+    TriangularMesh (Types.Vertex units coords)
+    -> Scene3d.Mesh.Uniform coords
 convertSurface mesh =
     let
         verts =
             TriangularMesh.vertices mesh
                 |> Array.map
                     (\v ->
-                        { position = asPointInInches v.position
-                        , normal = asUnitlessDirection v.normal
+                        { position = inMeters v.position
+                        , normal = v.normal
                         }
                     )
     in
@@ -69,7 +64,7 @@ convertSurface mesh =
         |> Scene3d.Mesh.indexedFaces
 
 
-convertMesh : TriangularMesh Types.Vertex -> Mesh
+convertMesh : TriangularMesh (Types.Vertex units coords) -> Mesh coords
 convertMesh mesh =
     let
         surface =
@@ -90,7 +85,7 @@ convertCamera :
 convertCamera camState options =
     let
         focalPoint =
-            Point3d.inches 0 0 -(Camera.cameraDistance camState)
+            Point3d.meters 0 0 -(Camera.cameraDistance camState)
 
         viewpoint =
             Viewpoint3d.lookAt
@@ -103,7 +98,7 @@ convertCamera camState options =
             Camera.verticalFieldOfView camState |> Angle.degrees
 
         height =
-            Camera.viewPortHeight camState |> Length.inches
+            Camera.viewPortHeight camState |> Length.meters
     in
     if options.orthogonalView then
         Camera3d.orthographic
@@ -206,7 +201,7 @@ analyzeRotation mat =
 
             axis =
                 n
-                    |> asPointInInches
+                    |> asPointInMeters
                     |> Axis3d.throughPoints Point3d.origin
                     |> Maybe.withDefault Axis3d.x
 
@@ -238,7 +233,7 @@ applySimilarityMatrix matrix entity =
 
         shiftVector =
             shift
-                |> asPointInInches
+                |> asPointInMeters
                 |> Vector3d.from Point3d.origin
 
         mat1 =
@@ -261,18 +256,13 @@ applySimilarityMatrix matrix entity =
         |> Scene3d.translateBy shiftVector
 
 
-wireframeBox :
-    Vec3
-    -> Float
-    -> Float
-    -> Float
-    -> Scene3d.Mesh.Plain WorldCoordinates
+wireframeBox : Vec3 -> Float -> Float -> Float -> Scene3d.Mesh.Plain coords
 wireframeBox center dimX dimY dimZ =
     let
         segment xa ya za xb yb zb =
             LineSegment3d.from
-                (Point3d.inches xa ya za)
-                (Point3d.inches xb yb zb)
+                (Point3d.meters xa ya za)
+                (Point3d.meters xb yb zb)
 
         { x, y, z } =
             Vec3.toRecord center
@@ -302,7 +292,11 @@ wireframeBox center dimX dimY dimZ =
         ]
 
 
-entities : Array Mesh -> Types.Model a -> Types.Options -> List WebGL.Entity
+entities :
+    Array (Mesh coords)
+    -> Types.Model a
+    -> Types.Options
+    -> List WebGL.Entity
 entities meshes model options =
     let
         convert index { material, transform } mesh =
@@ -382,7 +376,7 @@ entities meshes model options =
     Scene3d.toWebGLEntities
         { lights = lights
         , camera = convertCamera model.cameraState options
-        , clipDepth = Length.inches 0.5
+        , clipDepth = Length.meters 0.5
         , exposure = Scene3d.exposureValue 15
         , toneMapping = Scene3d.noToneMapping
         , whiteBalance = Light.daylight

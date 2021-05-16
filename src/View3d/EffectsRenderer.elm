@@ -10,7 +10,9 @@ import Color exposing (Color)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 exposing (Vec3, vec3)
 import Maybe
+import Point3d
 import TriangularMesh exposing (TriangularMesh)
+import Vector3d
 import View3d.Camera as Camera
 import View3d.Types as Types
 import WebGL
@@ -51,18 +53,25 @@ type alias Varyings =
     }
 
 
-extend : Types.Vertex -> Float -> Float -> Float -> VertexExtended
+extend : Types.Vertex units coords -> Float -> Float -> Float -> VertexExtended
 extend v x y z =
-    { position = v.position
-    , normal = v.normal
+    { position =
+        v.position
+            |> Point3d.unwrap
+            |> Math.Vector3.fromRecord
+    , normal =
+        v.normal
+            |> Vector3d.unwrap
+            |> Math.Vector3.fromRecord
+            |> Math.Vector3.normalize
     , barycentric = vec3 x y z
     }
 
 
-convertMesh : TriangularMesh Types.Vertex -> Mesh
+convertMesh : TriangularMesh (Types.Vertex units coords) -> Mesh
 convertMesh mesh =
     TriangularMesh.faceVertices mesh
-        |> List.map (\(u, v, w) -> (w, u, v))
+        |> List.map (\( u, v, w ) -> ( w, u, v ))
         |> List.map
             (\( u, v, w ) ->
                 ( extend u 1 0 0, extend v 1 1 0, extend w 1 0 1 )

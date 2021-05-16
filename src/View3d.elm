@@ -47,8 +47,8 @@ import WebGL
 -- RE-EXPORTING
 
 
-type alias Vertex =
-    Types.Vertex
+type alias Vertex units coords =
+    Types.Vertex units coords
 
 
 type alias Instance =
@@ -71,18 +71,18 @@ type alias Position =
     { x : Float, y : Float }
 
 
-type alias ModelImpl =
+type alias ModelImpl coords =
     Types.Model
         { requestRedraw : Bool
         , touchStart : Position
-        , sceneMeshes : Array SceneRenderer.Mesh
+        , sceneMeshes : Array (SceneRenderer.Mesh coords)
         , effectsMeshes : Array EffectsRenderer.Mesh
         , pickingMeshes : Array Picker.Mesh
         }
 
 
-type Model
-    = Model ModelImpl
+type Model coords
+    = Model (ModelImpl coords)
 
 
 type Outcome
@@ -95,7 +95,7 @@ type Outcome
 -- INIT
 
 
-init : Model
+init : Model coords
 init =
     Model
         { size = { width = 0, height = 0 }
@@ -180,7 +180,7 @@ decodeOffset =
     DOM.target DOM.boundingClientRect
 
 
-subscriptions : (Msg -> msg) -> Model -> Sub msg
+subscriptions : (Msg -> msg) -> Model coords -> Sub msg
 subscriptions toMsg (Model model) =
     let
         frameEvent =
@@ -214,12 +214,12 @@ subscriptions toMsg (Model model) =
 -- UPDATE
 
 
-update : Msg -> Model -> ( Model, Outcome )
+update : Msg -> Model coords -> ( Model coords, Outcome )
 update msg (Model model) =
     ( updateModel msg model, outcome msg model )
 
 
-updateModel : Msg -> ModelImpl -> Model
+updateModel : Msg -> ModelImpl coords -> Model coords
 updateModel msg model =
     case msg of
         FrameMsg time ->
@@ -259,7 +259,7 @@ updateModel msg model =
                 (Model model)
 
 
-outcome : Msg -> ModelImpl -> Outcome
+outcome : Msg -> ModelImpl coords -> Outcome
 outcome msg model =
     if Camera.wasDragged model.cameraState then
         None
@@ -279,7 +279,7 @@ outcome msg model =
                 None
 
 
-pickingOutcome : Position -> Touch.Keys -> Model -> Outcome
+pickingOutcome : Position -> Touch.Keys -> Model coords -> Outcome
 pickingOutcome pos mods (Model model) =
     Camera.pickingRay pos model.cameraState model.center (3 * model.radius)
         |> Maybe.andThen
@@ -305,7 +305,7 @@ centerPosition posList =
     }
 
 
-touchStartUpdate : List Position -> Position -> Model -> Model
+touchStartUpdate : List Position -> Position -> Model coords -> Model coords
 touchStartUpdate posList offset (Model model) =
     case posList of
         pos :: [] ->
@@ -327,7 +327,7 @@ touchStartUpdate posList offset (Model model) =
             Model model
 
 
-touchMoveUpdate : List Position -> Model -> Model
+touchMoveUpdate : List Position -> Model coords -> Model coords
 touchMoveUpdate posList model =
     case posList of
         pos :: [] ->
@@ -355,32 +355,35 @@ wheelZoomFactor wheelVal =
         1.0
 
 
-updateCamera : (Camera.State -> Camera.State) -> Model -> Model
+updateCamera : (Camera.State -> Camera.State) -> Model coords -> Model coords
 updateCamera fn (Model model) =
     { model | cameraState = fn model.cameraState } |> Model
 
 
-lookAlong : Vec3 -> Vec3 -> Model -> Model
+lookAlong : Vec3 -> Vec3 -> Model coords -> Model coords
 lookAlong axis up model =
     updateCamera (Camera.lookAlong axis up) model
 
 
-rotateBy : Vec3 -> Float -> Model -> Model
+rotateBy : Vec3 -> Float -> Model coords -> Model coords
 rotateBy axis angle model =
     updateCamera (Camera.rotateBy axis angle) model
 
 
-encompass : Model -> Model
+encompass : Model coords -> Model coords
 encompass (Model model) =
     updateCamera (Camera.encompass model.center model.radius) (Model model)
 
 
-setSize : Types.FrameSize -> Model -> Model
+setSize : Types.FrameSize -> Model coords -> Model coords
 setSize size (Model model) =
     updateCamera (Camera.setFrameSize size) (Model { model | size = size })
 
 
-setMeshes : List (TriangularMesh Vertex) -> ModelImpl -> ModelImpl
+setMeshes :
+    List (TriangularMesh (Vertex units coords))
+    -> ModelImpl coords
+    -> ModelImpl coords
 setMeshes meshes model =
     { model
         | sceneMeshes =
@@ -435,10 +438,10 @@ boundingSphere meshes instances =
 
 
 setScene :
-    Maybe (List (TriangularMesh Vertex))
+    Maybe (List (TriangularMesh (Vertex units coords)))
     -> List Instance
-    -> Model
-    -> Model
+    -> Model coords
+    -> Model coords
 setScene maybeMeshes instances (Model model) =
     let
         modelWithMeshes =
@@ -457,17 +460,17 @@ setScene maybeMeshes instances (Model model) =
         }
 
 
-setSelection : Set Int -> Model -> Model
+setSelection : Set Int -> Model coords -> Model coords
 setSelection selected (Model model) =
     Model { model | selected = selected }
 
 
-selection : Model -> Set Int
+selection : Model coords -> Set Int
 selection (Model model) =
     model.selected
 
 
-requestRedraw : Model -> Model
+requestRedraw : Model coords -> Model coords
 requestRedraw (Model model) =
     Model { model | requestRedraw = True }
 
@@ -476,7 +479,7 @@ requestRedraw (Model model) =
 -- VIEW
 
 
-view : (Msg -> msg) -> Model -> Options -> Html msg
+view : (Msg -> msg) -> Model coords -> Options -> Html msg
 view toMsg (Model model) options =
     let
         attributes =

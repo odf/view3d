@@ -5,7 +5,6 @@ import Color
 import Html
 import Length
 import Math.Matrix4 as Mat4
-import Math.Vector3
 import Mesh
 import Point3d exposing (Point3d)
 import Set
@@ -18,8 +17,12 @@ type alias Flags =
     {}
 
 
+type WorldCoordinates
+    = WorldCoordinates
+
+
 type alias Model =
-    View3d.Model
+    View3d.Model WorldCoordinates
 
 
 type alias Msg =
@@ -99,7 +102,10 @@ subscriptions model =
 
 geometry :
     Flags
-    -> ( List (TriangularMesh View3d.Vertex), List View3d.Instance )
+    ->
+        ( List (TriangularMesh (View3d.Vertex Length.Meters coords))
+        , List View3d.Instance
+        )
 geometry _ =
     let
         meshes =
@@ -126,7 +132,7 @@ geometry _ =
     ( meshes, [ inst 0, inst 1 ] )
 
 
-sheet : List (TriangularMesh View3d.Vertex)
+sheet : List (TriangularMesh (View3d.Vertex Length.Meters coords))
 sheet =
     let
         makeVertex u v =
@@ -175,12 +181,12 @@ sheet =
         [ (==) 1, (==) 2 ]
 
 
-convertMesh : Mesh.Mesh (Point3d units coords) -> TriangularMesh View3d.Vertex
+convertMesh :
+    Mesh.Mesh (Point3d units coords)
+    -> TriangularMesh (View3d.Vertex units coords)
 convertMesh meshIn =
     let
-        makeVertex point normal =
-            { position = Math.Vector3.fromRecord (Point3d.unwrap point)
-            , normal = Math.Vector3.fromRecord (Vector3d.unwrap normal)
-            }
+        makeVertex position normal =
+            { position = position, normal = normal }
     in
     Mesh.withNormals identity makeVertex meshIn |> Mesh.toTriangularMesh

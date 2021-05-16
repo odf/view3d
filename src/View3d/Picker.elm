@@ -7,6 +7,7 @@ module View3d.Picker exposing
 import Array exposing (Array)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Point3d
 import TriangularMesh exposing (TriangularMesh)
 import View3d.Camera as Camera
 import View3d.Types as Types exposing (Instance)
@@ -19,18 +20,21 @@ type alias Mesh =
     }
 
 
-convertMesh : TriangularMesh Types.Vertex -> Mesh
+convertMesh : TriangularMesh (Types.Vertex units coords) -> Mesh
 convertMesh mesh =
     let
+        vertexToPoint =
+            .position >> Point3d.unwrap >> Vec3.fromRecord
+
         triangles =
             mesh
-                |> TriangularMesh.mapVertices .position
+                |> TriangularMesh.mapVertices vertexToPoint
                 |> TriangularMesh.faceVertices
 
         vertices =
             TriangularMesh.vertices mesh
                 |> Array.toList
-                |> List.map .position
+                |> List.map vertexToPoint
 
         n =
             List.length vertices
