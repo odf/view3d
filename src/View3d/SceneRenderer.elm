@@ -294,7 +294,7 @@ wireframeBox center dimX dimY dimZ =
 
 entities :
     Array (Mesh coords)
-    -> Types.Model a
+    -> Types.Model coords a
     -> Types.Options
     -> List WebGL.Entity
 entities meshes model options =

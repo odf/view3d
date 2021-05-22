@@ -150,7 +150,7 @@ intersection ray mat mesh =
         |> Maybe.map ((*) factor)
 
 
-pick : Camera.Ray -> Array Mesh -> List Instance -> Maybe Int
+pick : Camera.Ray -> Array Mesh -> List (Instance coords) -> Maybe Int
 pick ray meshes scene =
     let
         step ( index, Types.Instance item ) bestSoFar =

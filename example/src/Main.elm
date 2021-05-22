@@ -1,11 +1,11 @@
 module Main exposing (main)
 
+import Angle
+import Axis3d
 import Browser
 import Color
 import Html
 import Length
-import Math.Matrix4 as Mat4
-import Math.Vector3 exposing (vec3)
 import Mesh
 import Point3d exposing (Point3d)
 import Set
@@ -105,7 +105,7 @@ geometry :
     Flags
     ->
         ( List (TriangularMesh (View3d.Vertex Length.Meters coords))
-        , List View3d.Instance
+        , List (View3d.Instance coords)
         )
 geometry _ =
     let
@@ -124,7 +124,7 @@ geometry _ =
             View3d.instance
                 { color = color i, roughness = 0.5, metallic = 0.1 }
                 i
-                |> View3d.transform (Mat4.makeRotate (pi / 2) (vec3 0 1 0))
+                |> View3d.rotateInstanceAround Axis3d.y (Angle.degrees 90.0)
     in
     ( meshes, [ inst 0, inst 1 ] )
 

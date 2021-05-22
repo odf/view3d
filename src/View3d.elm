@@ -13,27 +13,32 @@ module View3d exposing
     , lookAlong
     , requestRedraw
     , rotateBy
+    , rotateInstanceAround
     , selection
     , setScene
     , setSelection
     , setSize
     , subscriptions
-    , transform
     , update
     , view
     )
 
+import Angle exposing (Angle)
 import Array exposing (Array)
+import Axis3d exposing (Axis3d)
 import Bitwise
 import Browser.Events as Events
 import Color
 import DOM
+import Frame3d
+import Geometry.Interop.LinearAlgebra.Frame3d as Frame3dInterop
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
 import Html.Events.Extra.Touch as Touch
 import Json.Decode as Decode
-import Math.Matrix4 as Mat4 exposing (Mat4)
+import Length
+import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Set exposing (Set)
 import TriangularMesh exposing (TriangularMesh)
@@ -53,8 +58,8 @@ type alias Vertex units coords =
     Types.Vertex units coords
 
 
-type alias Instance =
-    Types.Instance
+type alias Instance coords =
+    Types.Instance coords
 
 
 type alias Material =
@@ -75,6 +80,7 @@ type alias Position =
 
 type alias ModelImpl coords =
     Types.Model
+        coords
         { requestRedraw : Bool
         , touchStart : Position
         , sceneMeshes : Array (SceneRenderer.Mesh coords)
@@ -397,7 +403,7 @@ setMeshes meshes model =
     }
 
 
-boundingSphere : Array Picker.Mesh -> List Instance -> ( Vec3, Float )
+boundingSphere : Array Picker.Mesh -> List (Instance coords) -> ( Vec3, Float )
 boundingSphere meshes scene =
     let
         fixRadius t r =
@@ -444,7 +450,7 @@ boundingSphere meshes scene =
 
 setScene :
     Maybe (List (TriangularMesh (Vertex units coords)))
-    -> List Instance
+    -> List (Instance coords)
     -> Model coords
     -> Model coords
 setScene maybeMeshes instances (Model model) =
@@ -480,20 +486,36 @@ requestRedraw (Model model) =
     Model { model | requestRedraw = True }
 
 
-instance : Types.Material -> Int -> Types.Instance
+instance : Types.Material -> Int -> Types.Instance coords
 instance mat idxMesh =
     Types.Instance
         { material = mat
         , transform = Mat4.identity
+        , frame = Frame3d.atOrigin
+        , scale = 1.0
         , idxMesh = idxMesh
         }
 
 
-transform : Mat4 -> Types.Instance -> Types.Instance
-transform mat (Types.Instance inst) =
+rotateInstanceAround :
+    Axis3d Length.Meters coords
+    -> Angle
+    -> Types.Instance coords
+    -> Types.Instance coords
+rotateInstanceAround axis angle (Types.Instance inst) =
+    let
+        frame =
+            Frame3d.rotateAround axis angle inst.frame
+
+        mat =
+            Frame3dInterop.toMat4 frame
+                |> Mat4.scale3 inst.scale inst.scale inst.scale
+    in
     Types.Instance
         { material = inst.material
-        , transform = Mat4.mul mat inst.transform
+        , transform = mat
+        , frame = frame
+        , scale = inst.scale
         , idxMesh = inst.idxMesh
         }
 

@@ -88,7 +88,11 @@ colorAsVec3 color =
     vec3 red green blue
 
 
-entities : Array Mesh -> Types.Model a -> Types.Options -> List WebGL.Entity
+entities :
+    Array Mesh
+    -> Types.Model coords a
+    -> Types.Options
+    -> List WebGL.Entity
 entities meshes model options =
     let
         radius =

@@ -8,6 +8,8 @@ module View3d.Types exposing
     )
 
 import Color exposing (Color)
+import Frame3d exposing (Frame3d)
+import Length
 import Math.Matrix4 exposing (Mat4)
 import Math.Vector3 exposing (Vec3)
 import Point3d exposing (Point3d)
@@ -34,18 +36,20 @@ type alias Material =
     }
 
 
-type Instance
+type Instance coords
     = Instance
         { material : Material
         , transform : Mat4
+        , frame : Frame3d Length.Meters coords {}
+        , scale : Float
         , idxMesh : Int
         }
 
 
-type alias Model a =
+type alias Model coords a =
     { a
         | size : FrameSize
-        , scene : List Instance
+        , scene : List (Instance coords)
         , selected : Set Int
         , center : Vec3
         , radius : Float
