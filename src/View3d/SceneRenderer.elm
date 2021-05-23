@@ -28,6 +28,7 @@ import View3d.Camera as Camera
 import View3d.Types as Types
 import Viewpoint3d
 import WebGL
+import Frame3d
 
 
 type alias Mesh coords =
@@ -299,7 +300,7 @@ entities :
     -> List WebGL.Entity
 entities meshes model options =
     let
-        convert index { material, transform } mesh =
+        convert index { material, frame, scale } mesh =
             let
                 highlight =
                     Set.member index model.selected
@@ -323,7 +324,8 @@ entities meshes model options =
                         Scene3d.mesh mOut mesh.surface
             in
             surface
-                |> applySimilarityMatrix transform
+                |> Scene3d.placeIn frame
+                |> Scene3d.scaleAbout (Frame3d.originPoint frame) scale
 
         viewing =
             Camera.viewingMatrix model.cameraState

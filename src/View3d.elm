@@ -540,7 +540,7 @@ mirrorInstanceAcross plane inst =
 
 
 updateInstanceFrame :
-    (Frame3d Length.Meters coords {} -> Frame3d Length.Meters coords {})
+    (Types.InstanceFrame coords -> Types.InstanceFrame coords)
     -> Types.Instance coords
     -> Types.Instance coords
 updateInstanceFrame fn (Types.Instance inst) =
