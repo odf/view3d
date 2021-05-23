@@ -10,6 +10,7 @@ import Axis3d
 import Camera3d
 import Color
 import Direction3d
+import Frame3d
 import Illuminance
 import Length exposing (Meters)
 import LineSegment3d
@@ -25,10 +26,10 @@ import Set
 import TriangularMesh exposing (TriangularMesh)
 import Vector3d
 import View3d.Camera as Camera
+import View3d.Similarity as Similarity
 import View3d.Types as Types
 import Viewpoint3d
 import WebGL
-import Frame3d
 
 
 type alias Mesh coords =
@@ -300,7 +301,7 @@ entities :
     -> List WebGL.Entity
 entities meshes model options =
     let
-        convert index { material, frame, scale } mesh =
+        convert index { material, transform } mesh =
             let
                 highlight =
                     Set.member index model.selected
@@ -324,8 +325,10 @@ entities meshes model options =
                         Scene3d.mesh mOut mesh.surface
             in
             surface
-                |> Scene3d.placeIn frame
-                |> Scene3d.scaleAbout (Frame3d.originPoint frame) scale
+                |> Scene3d.placeIn (Similarity.frame transform)
+                |> Scene3d.scaleAbout
+                    (Frame3d.originPoint (Similarity.frame transform))
+                    (Similarity.scale transform)
 
         viewing =
             Camera.viewingMatrix model.cameraState

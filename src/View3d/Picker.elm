@@ -10,6 +10,7 @@ import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Point3d
 import TriangularMesh exposing (TriangularMesh)
 import View3d.Camera as Camera
+import View3d.Similarity as Similarity
 import View3d.Types as Types exposing (Instance)
 
 
@@ -158,7 +159,7 @@ pick ray meshes scene =
                 intersectionDistance =
                     Maybe.map2
                         (intersection ray)
-                        (Mat4.inverse item.transform)
+                        (Mat4.inverse (Similarity.matrix item.transform))
                         (Array.get item.idxMesh meshes)
                         |> Maybe.andThen identity
             in

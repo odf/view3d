@@ -35,7 +35,7 @@ import Browser.Events as Events
 import Color
 import DOM
 import Direction3d exposing (Direction3d)
-import Frame3d exposing (Frame3d)
+import Frame3d
 import Geometry.Interop.LinearAlgebra.Frame3d as Frame3dInterop
 import Html exposing (Html)
 import Html.Attributes
@@ -54,6 +54,7 @@ import View3d.Camera as Camera
 import View3d.EffectsRenderer as EffectsRenderer
 import View3d.Picker as Picker
 import View3d.SceneRenderer as SceneRenderer
+import View3d.Similarity as Similarity exposing (Similarity)
 import View3d.Types as Types
 import WebGL
 
@@ -432,8 +433,12 @@ boundingSphere meshes scene =
             List.filter (hasIndex index) scene
                 |> List.map
                     (\(Types.Instance inst) ->
-                        ( Mat4.transform inst.transform mesh.centroid
-                        , fixRadius inst.transform mesh.radius
+                        ( Mat4.transform
+                            (Similarity.matrix inst.transform)
+                            mesh.centroid
+                        , fixRadius
+                            (Similarity.matrix inst.transform)
+                            mesh.radius
                         )
                     )
 
@@ -498,9 +503,7 @@ instance : Types.Material -> Int -> Types.Instance coords
 instance mat idxMesh =
     Types.Instance
         { material = mat
-        , transform = Mat4.identity
-        , frame = Frame3d.atOrigin
-        , scale = 1.0
+        , transform = Similarity.identity
         , idxMesh = idxMesh
         }
 
@@ -511,7 +514,7 @@ rotateInstanceAround :
     -> Types.Instance coords
     -> Types.Instance coords
 rotateInstanceAround axis angle inst =
-    updateInstanceFrame (Frame3d.rotateAround axis angle) inst
+    updateInstance (Similarity.rotateAround axis angle) inst
 
 
 translateInstanceBy :
@@ -519,7 +522,7 @@ translateInstanceBy :
     -> Types.Instance coords
     -> Types.Instance coords
 translateInstanceBy shift inst =
-    updateInstanceFrame (Frame3d.translateBy shift) inst
+    updateInstance (Similarity.translateBy shift) inst
 
 
 translateInstanceIn :
@@ -528,7 +531,7 @@ translateInstanceIn :
     -> Types.Instance coords
     -> Types.Instance coords
 translateInstanceIn dir dist inst =
-    updateInstanceFrame (Frame3d.translateIn dir dist) inst
+    updateInstance (Similarity.translateIn dir dist) inst
 
 
 mirrorInstanceAcross :
@@ -536,23 +539,7 @@ mirrorInstanceAcross :
     -> Types.Instance coords
     -> Types.Instance coords
 mirrorInstanceAcross plane inst =
-    updateInstanceFrame (Frame3d.mirrorAcross plane) inst
-
-
-updateInstanceFrame :
-    (Types.InstanceFrame coords -> Types.InstanceFrame coords)
-    -> Types.Instance coords
-    -> Types.Instance coords
-updateInstanceFrame fn (Types.Instance inst) =
-    let
-        frame =
-            fn inst.frame
-
-        mat =
-            Frame3dInterop.toMat4 frame
-                |> Mat4.scale3 inst.scale inst.scale inst.scale
-    in
-    Types.Instance { inst | transform = mat, frame = frame }
+    updateInstance (Similarity.mirrorAcross plane) inst
 
 
 scaleInstanceAbout :
@@ -560,21 +547,16 @@ scaleInstanceAbout :
     -> Float
     -> Types.Instance coords
     -> Types.Instance coords
-scaleInstanceAbout center scale (Types.Instance inst) =
-    let
-        s =
-            scale * inst.scale
+scaleInstanceAbout center scale inst =
+    updateInstance (Similarity.scaleAbout center scale) inst
 
-        p =
-            Point3d.scaleAbout Point3d.origin scale center
 
-        frame =
-            Frame3d.translateBy (Vector3d.from p center) inst.frame
-
-        mat =
-            Frame3dInterop.toMat4 frame |> Mat4.scale3 s s s
-    in
-    Types.Instance { inst | transform = mat, frame = frame, scale = s }
+updateInstance :
+    (Similarity coords -> Similarity coords)
+    -> Types.Instance coords
+    -> Types.Instance coords
+updateInstance fn (Types.Instance inst) =
+    Types.Instance { inst | transform = fn inst.transform }
 
 
 

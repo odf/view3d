@@ -14,6 +14,7 @@ import Point3d
 import TriangularMesh exposing (TriangularMesh)
 import Vector3d
 import View3d.Camera as Camera
+import View3d.Similarity as Similarity
 import View3d.Types as Types
 import WebGL
 import WebGL.Settings
@@ -157,7 +158,7 @@ entities meshes model options =
                 fragmentShaderFog
                 mesh
                 { uniforms
-                    | transform = transform
+                    | transform = Similarity.matrix transform
                     , color = colorAsVec3 options.backgroundColor
                 }
             ]
@@ -171,7 +172,7 @@ entities meshes model options =
                 fragmentShaderConstant
                 mesh
                 { uniforms
-                    | transform = transform
+                    | transform = Similarity.matrix transform
                     , color = colorAsVec3 options.outlineColor
                     , pushOut = 0.1 * options.outlineWidth
                 }
