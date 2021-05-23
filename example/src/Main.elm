@@ -112,19 +112,26 @@ geometry _ =
         meshes =
             sheet
 
-        color i =
+        material i =
             case i of
                 0 ->
-                    Color.hsl 0.13 0.9 0.7
+                    { color = Color.hsl 0.13 0.9 0.7
+                    , roughness = 0.5
+                    , metallic = 0.1
+                    }
 
                 _ ->
-                    Color.hsl 0.0 0.6 0.5
+                    { color = Color.hsl 0.0 0.6 0.5
+                    , roughness = 0.5
+                    , metallic = 0.1
+                    }
 
         inst i =
-            View3d.instance
-                { color = color i, roughness = 0.5, metallic = 0.1 }
-                i
-                |> View3d.rotateInstanceAround Axis3d.y (Angle.degrees 90.0)
+            View3d.instance (material i) i
+                |> View3d.scaleInstanceAbout
+                    (Point3d.meters 0.9 0.9 0.1)
+                    (1 + toFloat i)
+                |> View3d.rotateInstanceAround Axis3d.y (Angle.degrees -45.0)
     in
     ( meshes, [ inst 0, inst 1 ] )
 
@@ -140,7 +147,7 @@ sheet =
                 r =
                     u + 1
             in
-            Point3d.meters (r * cos a) (r * sin a) (u * cos a)
+            Point3d.meters (r * cos a) (r * sin a) 0
 
         subD =
             Mesh.subdivideSmoothly (always False) identity (always identity)

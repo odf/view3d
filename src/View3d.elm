@@ -11,14 +11,18 @@ module View3d exposing
     , init
     , instance
     , lookAlong
+    , mirrorInstanceAcross
     , requestRedraw
     , rotateBy
     , rotateInstanceAround
+    , scaleInstanceAbout
     , selection
     , setScene
     , setSelection
     , setSize
     , subscriptions
+    , translateInstanceBy
+    , translateInstanceIn
     , update
     , view
     )
@@ -30,18 +34,22 @@ import Bitwise
 import Browser.Events as Events
 import Color
 import DOM
-import Frame3d
+import Direction3d exposing (Direction3d)
+import Frame3d exposing (Frame3d)
 import Geometry.Interop.LinearAlgebra.Frame3d as Frame3dInterop
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
 import Html.Events.Extra.Touch as Touch
 import Json.Decode as Decode
-import Length
+import Length exposing (Length)
 import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Plane3d exposing (Plane3d)
+import Point3d exposing (Point3d)
 import Set exposing (Set)
 import TriangularMesh exposing (TriangularMesh)
+import Vector3d exposing (Vector3d)
 import View3d.Camera as Camera
 import View3d.EffectsRenderer as EffectsRenderer
 import View3d.Picker as Picker
@@ -502,22 +510,71 @@ rotateInstanceAround :
     -> Angle
     -> Types.Instance coords
     -> Types.Instance coords
-rotateInstanceAround axis angle (Types.Instance inst) =
+rotateInstanceAround axis angle inst =
+    updateInstanceFrame (Frame3d.rotateAround axis angle) inst
+
+
+translateInstanceBy :
+    Vector3d Length.Meters coords
+    -> Types.Instance coords
+    -> Types.Instance coords
+translateInstanceBy shift inst =
+    updateInstanceFrame (Frame3d.translateBy shift) inst
+
+
+translateInstanceIn :
+    Direction3d coords
+    -> Length
+    -> Types.Instance coords
+    -> Types.Instance coords
+translateInstanceIn dir dist inst =
+    updateInstanceFrame (Frame3d.translateIn dir dist) inst
+
+
+mirrorInstanceAcross :
+    Plane3d Length.Meters coords
+    -> Types.Instance coords
+    -> Types.Instance coords
+mirrorInstanceAcross plane inst =
+    updateInstanceFrame (Frame3d.mirrorAcross plane) inst
+
+
+updateInstanceFrame :
+    (Frame3d Length.Meters coords {} -> Frame3d Length.Meters coords {})
+    -> Types.Instance coords
+    -> Types.Instance coords
+updateInstanceFrame fn (Types.Instance inst) =
     let
         frame =
-            Frame3d.rotateAround axis angle inst.frame
+            fn inst.frame
 
         mat =
             Frame3dInterop.toMat4 frame
                 |> Mat4.scale3 inst.scale inst.scale inst.scale
     in
-    Types.Instance
-        { material = inst.material
-        , transform = mat
-        , frame = frame
-        , scale = inst.scale
-        , idxMesh = inst.idxMesh
-        }
+    Types.Instance { inst | transform = mat, frame = frame }
+
+
+scaleInstanceAbout :
+    Point3d Length.Meters coords
+    -> Float
+    -> Types.Instance coords
+    -> Types.Instance coords
+scaleInstanceAbout center scale (Types.Instance inst) =
+    let
+        s =
+            scale * inst.scale
+
+        p =
+            Point3d.scaleAbout Point3d.origin scale center
+
+        frame =
+            Frame3d.translateBy (Vector3d.from p center) inst.frame
+
+        mat =
+            Frame3dInterop.toMat4 frame |> Mat4.scale3 s s s
+    in
+    Types.Instance { inst | transform = mat, frame = frame, scale = s }
 
 
 
