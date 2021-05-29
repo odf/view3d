@@ -1,6 +1,6 @@
-module View3d.Similarity exposing
+module View3d.SimilarityTransform exposing
     ( Frame
-    , Similarity
+    , SimilarityTransform
     , frame
     , identity
     , matrix
@@ -28,7 +28,7 @@ type alias Frame coords =
     Frame3d Length.Meters coords { defines : coords }
 
 
-type Similarity coords
+type SimilarityTransform coords
     = Similarity
         { matrix : Mat4
         , frame : Frame coords
@@ -36,22 +36,22 @@ type Similarity coords
         }
 
 
-matrix : Similarity coords -> Mat4
+matrix : SimilarityTransform coords -> Mat4
 matrix (Similarity sim) =
     sim.matrix
 
 
-frame : Similarity coords -> Frame coords
+frame : SimilarityTransform coords -> Frame coords
 frame (Similarity sim) =
     sim.frame
 
 
-scale : Similarity coords -> Float
+scale : SimilarityTransform coords -> Float
 scale (Similarity sim) =
     sim.scale
 
 
-identity : Similarity coords
+identity : SimilarityTransform coords
 identity =
     Similarity
         { matrix = Math.Matrix4.identity
@@ -63,16 +63,16 @@ identity =
 rotateAround :
     Axis3d Length.Meters coords
     -> Angle
-    -> Similarity coords
-    -> Similarity coords
+    -> SimilarityTransform coords
+    -> SimilarityTransform coords
 rotateAround axis angle inst =
     updateFrame (Frame3d.rotateAround axis angle) inst
 
 
 translateBy :
     Vector3d Length.Meters coords
-    -> Similarity coords
-    -> Similarity coords
+    -> SimilarityTransform coords
+    -> SimilarityTransform coords
 translateBy shift inst =
     updateFrame (Frame3d.translateBy shift) inst
 
@@ -80,16 +80,16 @@ translateBy shift inst =
 translateIn :
     Direction3d coords
     -> Length
-    -> Similarity coords
-    -> Similarity coords
+    -> SimilarityTransform coords
+    -> SimilarityTransform coords
 translateIn dir dist inst =
     updateFrame (Frame3d.translateIn dir dist) inst
 
 
 mirrorAcross :
     Plane3d Length.Meters coords
-    -> Similarity coords
-    -> Similarity coords
+    -> SimilarityTransform coords
+    -> SimilarityTransform coords
 mirrorAcross plane inst =
     updateFrame (Frame3d.mirrorAcross plane) inst
 
@@ -97,8 +97,8 @@ mirrorAcross plane inst =
 scaleAbout :
     Point3d Length.Meters coords
     -> Float
-    -> Similarity coords
-    -> Similarity coords
+    -> SimilarityTransform coords
+    -> SimilarityTransform coords
 scaleAbout center scale_ (Similarity inst) =
     let
         s =
@@ -118,8 +118,8 @@ scaleAbout center scale_ (Similarity inst) =
 
 updateFrame :
     (Frame coords -> Frame coords)
-    -> Similarity coords
-    -> Similarity coords
+    -> SimilarityTransform coords
+    -> SimilarityTransform coords
 updateFrame fn (Similarity inst) =
     let
         s =

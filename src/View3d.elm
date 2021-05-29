@@ -52,7 +52,7 @@ import View3d.Camera as Camera
 import View3d.EffectsRenderer as EffectsRenderer
 import View3d.Picker as Picker
 import View3d.SceneRenderer as SceneRenderer
-import View3d.Similarity as Similarity exposing (Similarity)
+import View3d.SimilarityTransform as Similarity exposing (SimilarityTransform)
 import View3d.Types as Types
 import WebGL
 
@@ -550,7 +550,7 @@ scaleInstanceAbout center scale inst =
 
 
 updateInstance :
-    (Similarity coords -> Similarity coords)
+    (SimilarityTransform coords -> SimilarityTransform coords)
     -> Types.Instance coords
     -> Types.Instance coords
 updateInstance fn (Types.Instance inst) =

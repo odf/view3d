@@ -14,7 +14,7 @@ import Quantity
 import Set exposing (Set)
 import Vector3d exposing (Vector3d)
 import View3d.Camera as Camera
-import View3d.Similarity exposing (Similarity)
+import View3d.SimilarityTransform exposing (SimilarityTransform)
 
 
 type alias FrameSize =
@@ -38,7 +38,7 @@ type Instance coords
     = Instance
         { material : Material
         , idxMesh : Int
-        , transform : Similarity coords
+        , transform : SimilarityTransform coords
         }
 
 

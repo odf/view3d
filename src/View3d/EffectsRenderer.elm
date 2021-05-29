@@ -14,7 +14,7 @@ import Point3d
 import TriangularMesh exposing (TriangularMesh)
 import Vector3d
 import View3d.Camera as Camera
-import View3d.Similarity as Similarity
+import View3d.SimilarityTransform as Similarity
 import View3d.Types as Types
 import WebGL
 import WebGL.Settings
