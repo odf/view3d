@@ -35,8 +35,6 @@ import Browser.Events as Events
 import Color
 import DOM
 import Direction3d exposing (Direction3d)
-import Frame3d
-import Geometry.Interop.LinearAlgebra.Frame3d as Frame3dInterop
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
