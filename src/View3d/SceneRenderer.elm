@@ -6,7 +6,6 @@ module View3d.SceneRenderer exposing
 
 import Angle
 import Array exposing (Array)
-import Axis3d
 import Camera3d
 import Color
 import Direction3d
@@ -24,7 +23,6 @@ import Scene3d.Material as Material
 import Scene3d.Mesh
 import Set
 import TriangularMesh exposing (TriangularMesh)
-import Vector3d
 import View3d.Camera as Camera
 import View3d.SimilarityTransform as Similarity
 import View3d.Types as Types
@@ -111,34 +109,6 @@ convertCamera camState options =
             { viewpoint = viewpoint, verticalFieldOfView = fovy }
 
 
-orthonormalized : Mat4 -> Mat4
-orthonormalized mat =
-    let
-        project a b =
-            Vec3.scale (Vec3.dot a b) b
-
-        u =
-            vec3 1 0 0 |> Mat4.transform mat |> Vec3.normalize
-
-        v0 =
-            vec3 0 1 0 |> Mat4.transform mat
-
-        v =
-            project v0 u
-                |> Vec3.sub v0
-                |> Vec3.normalize
-
-        w0 =
-            vec3 0 0 1 |> Mat4.transform mat
-
-        w =
-            Vec3.add (project w0 u) (project w0 v)
-                |> Vec3.sub w0
-                |> Vec3.normalize
-    in
-    Mat4.makeBasis u v w
-
-
 determinant3d : Mat4 -> Float
 determinant3d mat =
     Vec3.dot
@@ -147,30 +117,6 @@ determinant3d mat =
             (Mat4.transform mat <| vec3 0 1 0)
             (Mat4.transform mat <| vec3 0 0 1)
         )
-
-
-longestTwo : Vec3 -> Vec3 -> Vec3 -> ( Vec3, Vec3 )
-longestTwo u v w =
-    let
-        ( a, b ) =
-            if Vec3.length u >= Vec3.length v then
-                if Vec3.length v >= Vec3.length w then
-                    ( u, v )
-
-                else
-                    ( u, w )
-
-            else if Vec3.length u >= Vec3.length w then
-                ( u, v )
-
-            else
-                ( v, w )
-    in
-    if Vec3.length a >= Vec3.length b then
-        ( a, b )
-
-    else
-        ( b, a )
 
 
 sign : number -> number
@@ -182,50 +128,6 @@ sign n =
         1
 
 
-analyzeRotation :
-    Mat4
-    -> { axis : Axis3d.Axis3d Meters coords, angle : Angle.Angle }
-analyzeRotation mat =
-    let
-        moved vec =
-            Mat4.transform mat vec |> Vec3.sub vec
-
-        ( v, w ) =
-            longestTwo (moved Vec3.i) (moved Vec3.j) (moved Vec3.k)
-    in
-    if Vec3.length v < 1.0e-3 then
-        { axis = Axis3d.x, angle = Angle.degrees 0 }
-
-    else
-        let
-            n =
-                Vec3.cross v w |> Vec3.normalize
-
-            axis =
-                n
-                    |> asPointInMeters
-                    |> Axis3d.throughPoints Point3d.origin
-                    |> Maybe.withDefault Axis3d.x
-
-            a =
-                Vec3.normalize v
-
-            b =
-                Mat4.transform mat a |> Vec3.normalize
-
-            c =
-                Vec3.cross a b
-
-            angle =
-                if Vec3.length c < 1.0e-3 then
-                    pi
-
-                else
-                    sign (Vec3.dot c n) * acos (Vec3.dot a b)
-        in
-        { axis = axis, angle = Angle.radians angle }
-
-
 applySimilarityMatrix : Mat4 -> Scene3d.Entity coords -> Scene3d.Entity coords
 applySimilarityMatrix matrix entity =
     let
@@ -233,29 +135,39 @@ applySimilarityMatrix matrix entity =
             vec3 0 0 0
                 |> Mat4.transform matrix
 
-        shiftVector =
-            shift
-                |> asPointInMeters
-                |> Vector3d.from Point3d.origin
-
-        mat1 =
+        mat =
             Mat4.mul (Mat4.makeTranslate (Vec3.negate shift)) matrix
 
         det =
-            determinant3d mat1
+            determinant3d mat
 
         scale =
             sign det * (abs det ^ (1 / 3))
 
-        { axis, angle } =
-            Mat4.scale3 (1 / scale) (1 / scale) (1 / scale) mat1
-                |> orthonormalized
-                |> analyzeRotation
+        xIn =
+            Mat4.transform mat Vec3.i |> Vec3.toRecord |> Direction3d.unsafe
+
+        yIn =
+            Mat4.transform mat Vec3.j |> Vec3.toRecord |> Direction3d.unsafe
+
+        zIn =
+            Mat4.transform mat Vec3.k |> Vec3.toRecord |> Direction3d.unsafe
+
+        ( xOut, yOut, zOut ) =
+            Direction3d.orthogonalize xIn yIn zIn
+                |> Maybe.withDefault ( xIn, yIn, zIn )
+
+        frame =
+            Frame3d.unsafe
+                { originPoint = asPointInMeters shift
+                , xDirection = xOut
+                , yDirection = yOut
+                , zDirection = zOut
+                }
     in
     entity
         |> Scene3d.scaleAbout Point3d.origin scale
-        |> Scene3d.rotateAround axis angle
-        |> Scene3d.translateBy shiftVector
+        |> Scene3d.placeIn frame
 
 
 wireframeBox : Vec3 -> Float -> Float -> Float -> Scene3d.Mesh.Plain coords
@@ -325,10 +237,10 @@ entities meshes model options =
                         Scene3d.mesh mOut mesh.surface
             in
             surface
-                |> Scene3d.placeIn (Similarity.frame transform)
                 |> Scene3d.scaleAbout
-                    (Frame3d.originPoint (Similarity.frame transform))
+                    Point3d.origin
                     (Similarity.scale transform)
+                |> Scene3d.placeIn (Similarity.frame transform)
 
         viewing =
             Camera.viewingMatrix model.cameraState
