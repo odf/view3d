@@ -9,12 +9,11 @@ import Array exposing (Array)
 import Camera3d
 import Color
 import Direction3d
-import Frame3d
 import Illuminance
 import Length exposing (Meters)
 import LineSegment3d
-import Math.Matrix4 as Mat4 exposing (Mat4)
-import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Math.Matrix4 as Mat4
+import Math.Vector3 as Vec3 exposing (Vec3)
 import Maybe
 import Point3d exposing (Point3d)
 import Scene3d
@@ -24,7 +23,7 @@ import Scene3d.Mesh
 import Set
 import TriangularMesh exposing (TriangularMesh)
 import View3d.Camera as Camera
-import View3d.SimilarityTransform as Similarity
+import View3d.SimilarityTransform as Similarity exposing (SimilarityTransform)
 import View3d.Types as Types
 import Viewpoint3d
 import WebGL
@@ -39,11 +38,6 @@ type alias Mesh coords =
 inMeters : Point3d units coords -> Point3d Meters coords
 inMeters =
     Point3d.unwrap >> Point3d.unsafe
-
-
-asPointInMeters : Vec3 -> Point3d Meters coords
-asPointInMeters p =
-    Point3d.meters (Vec3.getX p) (Vec3.getY p) (Vec3.getZ p)
 
 
 convertSurface :
@@ -109,67 +103,6 @@ convertCamera camState options =
             { viewpoint = viewpoint, verticalFieldOfView = fovy }
 
 
-determinant3d : Mat4 -> Float
-determinant3d mat =
-    Vec3.dot
-        (Mat4.transform mat <| vec3 1 0 0)
-        (Vec3.cross
-            (Mat4.transform mat <| vec3 0 1 0)
-            (Mat4.transform mat <| vec3 0 0 1)
-        )
-
-
-sign : number -> number
-sign n =
-    if n < 0 then
-        -1
-
-    else
-        1
-
-
-applySimilarityMatrix : Mat4 -> Scene3d.Entity coords -> Scene3d.Entity coords
-applySimilarityMatrix matrix entity =
-    let
-        shift =
-            vec3 0 0 0
-                |> Mat4.transform matrix
-
-        mat =
-            Mat4.mul (Mat4.makeTranslate (Vec3.negate shift)) matrix
-
-        det =
-            determinant3d mat
-
-        scale =
-            sign det * (abs det ^ (1 / 3))
-
-        xIn =
-            Mat4.transform mat Vec3.i |> Vec3.toRecord |> Direction3d.unsafe
-
-        yIn =
-            Mat4.transform mat Vec3.j |> Vec3.toRecord |> Direction3d.unsafe
-
-        zIn =
-            Mat4.transform mat Vec3.k |> Vec3.toRecord |> Direction3d.unsafe
-
-        ( xOut, yOut, zOut ) =
-            Direction3d.orthogonalize xIn yIn zIn
-                |> Maybe.withDefault ( xIn, yIn, zIn )
-
-        frame =
-            Frame3d.unsafe
-                { originPoint = asPointInMeters shift
-                , xDirection = xOut
-                , yDirection = yOut
-                , zDirection = zOut
-                }
-    in
-    entity
-        |> Scene3d.scaleAbout Point3d.origin scale
-        |> Scene3d.placeIn frame
-
-
 wireframeBox : Vec3 -> Float -> Float -> Float -> Scene3d.Mesh.Plain coords
 wireframeBox center dimX dimY dimZ =
     let
@@ -206,6 +139,16 @@ wireframeBox center dimX dimY dimZ =
         ]
 
 
+apply :
+    SimilarityTransform coords
+    -> Scene3d.Entity coords
+    -> Scene3d.Entity coords
+apply transform entity =
+    entity
+        |> Scene3d.scaleAbout Point3d.origin (Similarity.scale transform)
+        |> Scene3d.placeIn (Similarity.frame transform)
+
+
 entities :
     Array (Mesh coords)
     -> Types.Model coords a
@@ -236,11 +179,7 @@ entities meshes model options =
                     else
                         Scene3d.mesh mOut mesh.surface
             in
-            surface
-                |> Scene3d.scaleAbout
-                    Point3d.origin
-                    (Similarity.scale transform)
-                |> Scene3d.placeIn (Similarity.frame transform)
+            apply transform surface
 
         viewing =
             Camera.viewingMatrix model.cameraState
@@ -254,7 +193,7 @@ entities meshes model options =
                             |> Maybe.withDefault Scene3d.nothing
                     )
                 |> Scene3d.group
-                |> applySimilarityMatrix viewing
+                |> apply (Similarity.fromMatrix viewing)
 
         sceneCenter =
             Mat4.transform viewing model.center
