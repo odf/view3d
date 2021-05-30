@@ -5,6 +5,7 @@ module View3d.SimilarityTransform exposing
     , identity
     , matrix
     , mirrorAcross
+    , renormalize
     , rotateAround
     , scale
     , scaleAbout
@@ -114,6 +115,35 @@ scaleAbout center scale_ (Similarity inst) =
             toMat4 frame_ |> Math.Matrix4.scale3 s s s
     in
     Similarity { inst | matrix = mat, frame = frame_, scale = s }
+
+
+renormalize : SimilarityTransform coords -> SimilarityTransform coords
+renormalize =
+    updateFrame renormalizeFrame3d
+
+
+renormalizeFrame3d : Frame coords -> Frame coords
+renormalizeFrame3d frameIn =
+    let
+        xIn =
+            Frame3d.xDirection frameIn
+
+        yIn =
+            Frame3d.yDirection frameIn
+
+        zIn =
+            Frame3d.zDirection frameIn
+
+        ( xOut, yOut, zOut ) =
+            Direction3d.orthogonalize xIn yIn zIn
+                |> Maybe.withDefault ( xIn, yIn, zIn )
+    in
+    Frame3d.unsafe
+        { originPoint = Frame3d.originPoint frameIn
+        , xDirection = xOut
+        , yDirection = yOut
+        , zDirection = zOut
+        }
 
 
 updateFrame :
