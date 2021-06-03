@@ -18,7 +18,7 @@ import Maybe
 import Point3d exposing (Point3d)
 import Scene3d
 import Scene3d.Light as Light
-import Scene3d.Material as Material
+import Scene3d.Material as Material exposing (Material)
 import Scene3d.Mesh
 import Set
 import TriangularMesh exposing (TriangularMesh)
@@ -56,6 +56,15 @@ convertMesh mesh =
     { surface = surface
     , shadow = Scene3d.Mesh.shadow surface
     }
+
+
+convertMaterial : Types.Material -> Material coords { a | normals : () }
+convertMaterial material =
+    Material.pbr
+        { baseColor = material.color
+        , roughness = material.roughness
+        , metallic = material.metallic
+        }
 
 
 convertCamera :
@@ -135,6 +144,33 @@ apply transform entity =
         |> Scene3d.placeIn (Similarity.frame transform)
 
 
+sceneLights : Types.Options -> Scene3d.Lights coords
+sceneLights options =
+    let
+        sun =
+            Light.directional (Light.castsShadows options.drawShadows)
+                { direction = Direction3d.yz (Angle.degrees -120)
+                , intensity = Illuminance.lux 80000
+                , chromaticity = Light.sunlight
+                }
+
+        sky =
+            Light.overhead
+                { upDirection = Direction3d.z
+                , chromaticity = Light.skylight
+                , intensity = Illuminance.lux 30000
+                }
+
+        environment =
+            Light.overhead
+                { upDirection = Direction3d.reverse Direction3d.z
+                , chromaticity = Light.daylight
+                , intensity = Illuminance.lux 5000
+                }
+    in
+    Scene3d.threeLights sun sky environment
+
+
 entities :
     Array (Mesh coords)
     -> Types.Model coords a
@@ -144,19 +180,12 @@ entities meshes model options =
     let
         convert index { material, transform } mesh =
             let
-                highlight =
-                    Set.member index model.selected
-
                 mOut =
-                    if highlight then
+                    if Set.member index model.selected then
                         Material.matte Color.red
 
                     else
-                        Material.pbr
-                            { baseColor = material.color
-                            , roughness = material.roughness
-                            , metallic = material.metallic
-                            }
+                        convertMaterial material
 
                 surface =
                     if options.drawShadows then
@@ -190,33 +219,9 @@ entities meshes model options =
         dummyBox =
             wireframeBox sceneCenter boxWidth boxWidth boxWidth
                 |> Scene3d.mesh (Material.color options.backgroundColor)
-
-        sun =
-            Light.directional (Light.castsShadows options.drawShadows)
-                { direction = Direction3d.yz (Angle.degrees -120)
-                , intensity = Illuminance.lux 80000
-                , chromaticity = Light.sunlight
-                }
-
-        sky =
-            Light.overhead
-                { upDirection = Direction3d.z
-                , chromaticity = Light.skylight
-                , intensity = Illuminance.lux 30000
-                }
-
-        environment =
-            Light.overhead
-                { upDirection = Direction3d.reverse Direction3d.z
-                , chromaticity = Light.daylight
-                , intensity = Illuminance.lux 5000
-                }
-
-        lights =
-            Scene3d.threeLights sun sky environment
     in
     Scene3d.toWebGLEntities
-        { lights = lights
+        { lights = sceneLights options
         , camera = convertCamera model.cameraState options
         , clipDepth = Length.meters 0.5
         , exposure = Scene3d.exposureValue 15
