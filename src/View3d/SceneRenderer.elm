@@ -40,35 +40,21 @@ inMeters =
     Point3d.unwrap >> Point3d.unsafe
 
 
-convertSurface :
-    TriangularMesh (Types.Vertex units coords)
-    -> Scene3d.Mesh.Uniform coords
-convertSurface mesh =
+convertMesh : TriangularMesh (Types.Vertex units coords) -> Mesh coords
+convertMesh mesh =
     let
-        verts =
-            TriangularMesh.vertices mesh
-                |> Array.map
+        surface =
+            mesh
+                |> TriangularMesh.mapVertices
                     (\v ->
                         { position = inMeters v.position
                         , normal = v.normal
                         }
                     )
-    in
-    TriangularMesh.indexed verts (TriangularMesh.faceIndices mesh)
-        |> Scene3d.Mesh.indexedFaces
-
-
-convertMesh : TriangularMesh (Types.Vertex units coords) -> Mesh coords
-convertMesh mesh =
-    let
-        surface =
-            convertSurface mesh
-
-        shadow =
-            Scene3d.Mesh.shadow surface
+                |> Scene3d.Mesh.indexedFaces
     in
     { surface = surface
-    , shadow = shadow
+    , shadow = Scene3d.Mesh.shadow surface
     }
 
 
