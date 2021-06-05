@@ -54,7 +54,7 @@ type alias Varyings =
     }
 
 
-extend : Types.Vertex units coords -> Float -> Float -> Float -> VertexExtended
+extend : Types.Vertex coords -> Float -> Float -> Float -> VertexExtended
 extend v x y z =
     { position =
         v.position
@@ -69,7 +69,7 @@ extend v x y z =
     }
 
 
-convertMesh : TriangularMesh (Types.Vertex units coords) -> Mesh
+convertMesh : TriangularMesh (Types.Vertex coords) -> Mesh
 convertMesh mesh =
     TriangularMesh.faceVertices mesh
         |> List.map (\( u, v, w ) -> ( w, u, v ))

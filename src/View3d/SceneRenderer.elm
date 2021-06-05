@@ -10,12 +10,12 @@ import Camera3d
 import Color
 import Direction3d
 import Illuminance
-import Length exposing (Meters)
+import Length
 import LineSegment3d
 import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (Vec3)
 import Maybe
-import Point3d exposing (Point3d)
+import Point3d
 import Scene3d
 import Scene3d.Light as Light
 import Scene3d.Material as Material exposing (Material)
@@ -35,36 +35,15 @@ type alias Mesh coords =
     }
 
 
-inMeters : Point3d units coords -> Point3d Meters coords
-inMeters =
-    Point3d.unwrap >> Point3d.unsafe
-
-
-convertMesh : TriangularMesh (Types.Vertex units coords) -> Mesh coords
+convertMesh : TriangularMesh (Types.Vertex coords) -> Mesh coords
 convertMesh mesh =
     let
         surface =
-            mesh
-                |> TriangularMesh.mapVertices
-                    (\v ->
-                        { position = inMeters v.position
-                        , normal = v.normal
-                        }
-                    )
-                |> Scene3d.Mesh.indexedFaces
+            Scene3d.Mesh.indexedFaces mesh
     in
     { surface = surface
     , shadow = Scene3d.Mesh.shadow surface
     }
-
-
-convertMaterial : Types.Material -> Material coords { a | normals : () }
-convertMaterial material =
-    Material.pbr
-        { baseColor = material.color
-        , roughness = material.roughness
-        , metallic = material.metallic
-        }
 
 
 convertCamera :
@@ -96,6 +75,22 @@ convertCamera camState options =
     else
         Camera3d.perspective
             { viewpoint = viewpoint, verticalFieldOfView = fovy }
+
+
+makeMaterial :
+    Types.Material
+    -> Bool
+    -> Material coords { a | normals : () }
+makeMaterial material highlight =
+    if highlight then
+        Material.matte Color.red
+
+    else
+        Material.pbr
+            { baseColor = material.color
+            , roughness = material.roughness
+            , metallic = material.metallic
+            }
 
 
 wireframeBox : Vec3 -> Float -> Float -> Float -> Scene3d.Mesh.Plain coords
@@ -181,11 +176,7 @@ entities meshes model options =
         convert index { material, transform } mesh =
             let
                 mOut =
-                    if Set.member index model.selected then
-                        Material.matte Color.red
-
-                    else
-                        convertMaterial material
+                    makeMaterial material (Set.member index model.selected)
 
                 surface =
                     if options.drawShadows then
@@ -196,17 +187,17 @@ entities meshes model options =
             in
             apply transform surface
 
+        makeEntity index (Types.Instance item) =
+            Array.get item.idxMesh meshes
+                |> Maybe.map (convert index item)
+                |> Maybe.withDefault Scene3d.nothing
+
         viewing =
             Camera.viewingMatrix model.cameraState
 
         sceneGroup =
             model.scene
-                |> List.indexedMap
-                    (\index (Types.Instance item) ->
-                        Array.get item.idxMesh meshes
-                            |> Maybe.map (convert index item)
-                            |> Maybe.withDefault Scene3d.nothing
-                    )
+                |> List.indexedMap makeEntity
                 |> Scene3d.group
                 |> apply (Similarity.fromMatrix viewing)
 

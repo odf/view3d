@@ -8,6 +8,7 @@ module View3d.Types exposing
     )
 
 import Color exposing (Color)
+import Length
 import Math.Vector3 exposing (Vec3)
 import Point3d exposing (Point3d)
 import Quantity
@@ -21,8 +22,8 @@ type alias FrameSize =
     { width : Float, height : Float }
 
 
-type alias Vertex units coords =
-    { position : Point3d units coords
+type alias Vertex coords =
+    { position : Point3d Length.Meters coords
     , normal : Vector3d Quantity.Unitless coords
     }
 

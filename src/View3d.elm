@@ -61,8 +61,8 @@ import WebGL
 -- RE-EXPORTING
 
 
-type alias Vertex units coords =
-    Types.Vertex units coords
+type alias Vertex coords =
+    Types.Vertex coords
 
 
 type alias Instance coords =
@@ -396,7 +396,7 @@ setSize size (Model model) =
 
 
 setMeshes :
-    List (TriangularMesh (Vertex units coords))
+    List (TriangularMesh (Vertex coords))
     -> ModelImpl coords
     -> ModelImpl coords
 setMeshes meshes model =
@@ -460,7 +460,7 @@ boundingSphere meshes scene =
 
 
 setScene :
-    Maybe (List (TriangularMesh (Vertex units coords)))
+    Maybe (List (TriangularMesh (Vertex coords)))
     -> List (Instance coords)
     -> Model coords
     -> Model coords

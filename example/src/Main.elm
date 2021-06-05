@@ -104,7 +104,7 @@ subscriptions model =
 geometry :
     Flags
     ->
-        ( List (TriangularMesh (View3d.Vertex Length.Meters coords))
+        ( List (TriangularMesh (View3d.Vertex coords))
         , List (View3d.Instance coords)
         )
 geometry _ =
@@ -136,7 +136,7 @@ geometry _ =
     ( meshes, [ inst 0, inst 1 ] )
 
 
-sheet : List (TriangularMesh (View3d.Vertex Length.Meters coords))
+sheet : List (TriangularMesh (View3d.Vertex coords))
 sheet =
     let
         makeVertex u v =
@@ -186,8 +186,8 @@ sheet =
 
 
 convertMesh :
-    Mesh.Mesh (Point3d units coords)
-    -> TriangularMesh (View3d.Vertex units coords)
+    Mesh.Mesh (Point3d Length.Meters coords)
+    -> TriangularMesh (View3d.Vertex coords)
 convertMesh meshIn =
     let
         makeVertex position normal =

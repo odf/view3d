@@ -21,7 +21,7 @@ type alias Mesh =
     }
 
 
-convertMesh : TriangularMesh (Types.Vertex units coords) -> Mesh
+convertMesh : TriangularMesh (Types.Vertex coords) -> Mesh
 convertMesh mesh =
     let
         vertexToPoint =
