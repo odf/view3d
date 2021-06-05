@@ -12,6 +12,7 @@ module View3d exposing
     , instance
     , lookAlong
     , mirrorInstanceAcross
+    , placeInstanceIn
     , requestRedraw
     , rotateBy
     , rotateInstanceAround
@@ -547,6 +548,14 @@ scaleInstanceAbout :
     -> Types.Instance coords
 scaleInstanceAbout center scale inst =
     updateInstance (Similarity.scaleAbout center scale) inst
+
+
+placeInstanceIn :
+    Similarity.Frame coords
+    -> Types.Instance coords
+    -> Types.Instance coords
+placeInstanceIn frame =
+    updateInstance (Similarity.placeIn frame)
 
 
 updateInstance :

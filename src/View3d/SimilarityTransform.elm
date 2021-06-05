@@ -6,6 +6,7 @@ module View3d.SimilarityTransform exposing
     , identity
     , matrix
     , mirrorAcross
+    , placeIn
     , rotateAround
     , scale
     , scaleAbout
@@ -116,6 +117,14 @@ scaleAbout center scale_ (Similarity inst) =
             toMat4 frame_ |> Mat4.scale3 s s s
     in
     Similarity { inst | matrix = mat, frame = frame_, scale = s }
+
+
+placeIn :
+    Frame coords
+    -> SimilarityTransform coords
+    -> SimilarityTransform coords
+placeIn frame_ =
+    updateFrame (Frame3d.placeIn frame_)
 
 
 updateFrame :
