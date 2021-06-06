@@ -22,6 +22,7 @@ module View3d exposing
     , setSelection
     , setSize
     , subscriptions
+    , transformInstance
     , translateInstanceBy
     , translateInstanceIn
     , update
@@ -42,7 +43,7 @@ import Html.Events
 import Html.Events.Extra.Touch as Touch
 import Json.Decode as Decode
 import Length exposing (Length)
-import Math.Matrix4 as Mat4
+import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Plane3d exposing (Plane3d)
 import Point3d exposing (Point3d)
@@ -556,6 +557,18 @@ placeInstanceIn :
     -> Types.Instance coords
 placeInstanceIn frame =
     updateInstance (Similarity.placeIn frame)
+
+
+transformInstance : Mat4 -> Types.Instance coords -> Types.Instance coords
+transformInstance mat =
+    let
+        sim =
+            Similarity.fromMatrix mat
+    in
+    updateInstance
+        (Similarity.scaleAbout Point3d.origin (Similarity.scale sim)
+            >> Similarity.placeIn (Similarity.frame sim)
+        )
 
 
 updateInstance :
