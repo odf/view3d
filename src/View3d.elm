@@ -560,15 +560,8 @@ placeInstanceIn frame =
 
 
 transformInstance : Mat4 -> Types.Instance coords -> Types.Instance coords
-transformInstance mat =
-    let
-        sim =
-            Similarity.fromMatrix mat
-    in
-    updateInstance
-        (Similarity.scaleAbout Point3d.origin (Similarity.scale sim)
-            >> Similarity.placeIn (Similarity.frame sim)
-        )
+transformInstance =
+    Similarity.fromMatrix >> Similarity.compose >> updateInstance
 
 
 updateInstance :

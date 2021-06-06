@@ -1,6 +1,7 @@
 module View3d.SimilarityTransform exposing
     ( Frame
     , SimilarityTransform
+    , compose
     , frame
     , fromMatrix
     , identity
@@ -125,6 +126,14 @@ placeIn :
     -> SimilarityTransform coords
 placeIn frame_ =
     updateFrame (Frame3d.placeIn frame_)
+
+
+compose :
+    SimilarityTransform coords
+    -> SimilarityTransform coords
+    -> SimilarityTransform coords
+compose (Similarity new) =
+    scaleAbout Point3d.origin new.scale >> placeIn new.frame
 
 
 updateFrame :
