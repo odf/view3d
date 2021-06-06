@@ -155,15 +155,6 @@ determinant3d mat =
         )
 
 
-sign : number -> number
-sign n =
-    if n < 0 then
-        -1
-
-    else
-        1
-
-
 asPointInMeters : Vec3 -> Point3d Length.Meters coords
 asPointInMeters p =
     Point3d.meters (Vec3.getX p) (Vec3.getY p) (Vec3.getZ p)
@@ -178,11 +169,8 @@ fromMatrix matIn =
         mat =
             Mat4.mul (Mat4.makeTranslate (Vec3.negate shift)) matIn
 
-        det =
-            determinant3d mat
-
         scale_ =
-            sign det * (abs det ^ (1 / 3))
+            abs (determinant3d mat) ^ (1 / 3)
 
         xIn =
             Mat4.transform mat Vec3.i |> Vec3.toRecord |> Direction3d.unsafe
