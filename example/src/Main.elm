@@ -12,6 +12,7 @@ import Set
 import TriangularMesh exposing (TriangularMesh)
 import Vector3d
 import View3d
+import View3d.Instance as Instance exposing (Instance)
 
 
 type alias Flags =
@@ -103,10 +104,7 @@ subscriptions model =
 
 geometry :
     Flags
-    ->
-        ( List (TriangularMesh (View3d.Vertex coords))
-        , List (View3d.Instance coords)
-        )
+    -> ( List (TriangularMesh (View3d.Vertex coords)), List (Instance coords) )
 geometry _ =
     let
         meshes =
@@ -127,11 +125,11 @@ geometry _ =
                     }
 
         inst i =
-            View3d.instance (material i) i
-                |> View3d.scaleInstanceAbout
+            Instance.make (material i) i
+                |> Instance.scaleAbout
                     (Point3d.meters 0.9 0.9 0.1)
                     (1 + toFloat i)
-                |> View3d.rotateInstanceAround Axis3d.y (Angle.degrees -45.0)
+                |> Instance.rotateAround Axis3d.y (Angle.degrees -45.0)
     in
     ( meshes, [ inst 0, inst 1 ] )
 

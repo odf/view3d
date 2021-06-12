@@ -1,6 +1,5 @@
 module View3d exposing
-    ( Instance
-    , Material
+    ( Material
     , Model
     , Msg
     , Options
@@ -9,52 +8,38 @@ module View3d exposing
     , defaultOptions
     , encompass
     , init
-    , instance
     , lookAlong
-    , mirrorInstanceAcross
-    , placeInstanceIn
     , requestRedraw
     , rotateBy
-    , rotateInstanceAround
-    , scaleInstanceAbout
     , selection
     , setScene
     , setSelection
     , setSize
     , subscriptions
-    , transformInstance
-    , translateInstanceBy
-    , translateInstanceIn
     , update
     , view
     )
 
-import Angle exposing (Angle)
 import Array exposing (Array)
-import Axis3d exposing (Axis3d)
 import Bitwise
 import Browser.Events as Events
 import Color
 import DOM
-import Direction3d exposing (Direction3d)
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
 import Html.Events.Extra.Touch as Touch
 import Json.Decode as Decode
-import Length exposing (Length)
-import Math.Matrix4 as Mat4 exposing (Mat4)
+import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
-import Plane3d exposing (Plane3d)
-import Point3d exposing (Point3d)
 import Set exposing (Set)
 import TriangularMesh exposing (TriangularMesh)
-import Vector3d exposing (Vector3d)
 import View3d.Camera as Camera
 import View3d.EffectsRenderer as EffectsRenderer
+import View3d.Instance exposing (Instance)
 import View3d.Picker as Picker
 import View3d.SceneRenderer as SceneRenderer
-import View3d.SimilarityTransform as Similarity exposing (SimilarityTransform)
+import View3d.SimilarityTransform as Similarity
 import View3d.Types as Types
 import WebGL
 
@@ -65,10 +50,6 @@ import WebGL
 
 type alias Vertex coords =
     Types.Vertex coords
-
-
-type alias Instance coords =
-    Types.Instance coords
 
 
 type alias Material =
@@ -497,79 +478,6 @@ selection (Model model) =
 requestRedraw : Model coords -> Model coords
 requestRedraw (Model model) =
     Model { model | requestRedraw = True }
-
-
-instance : Types.Material -> Int -> Types.Instance coords
-instance mat idxMesh =
-    Types.Instance
-        { material = mat
-        , transform = Similarity.identity
-        , idxMesh = idxMesh
-        }
-
-
-rotateInstanceAround :
-    Axis3d Length.Meters coords
-    -> Angle
-    -> Types.Instance coords
-    -> Types.Instance coords
-rotateInstanceAround axis angle inst =
-    updateInstance (Similarity.rotateAround axis angle) inst
-
-
-translateInstanceBy :
-    Vector3d Length.Meters coords
-    -> Types.Instance coords
-    -> Types.Instance coords
-translateInstanceBy shift inst =
-    updateInstance (Similarity.translateBy shift) inst
-
-
-translateInstanceIn :
-    Direction3d coords
-    -> Length
-    -> Types.Instance coords
-    -> Types.Instance coords
-translateInstanceIn dir dist inst =
-    updateInstance (Similarity.translateIn dir dist) inst
-
-
-mirrorInstanceAcross :
-    Plane3d Length.Meters coords
-    -> Types.Instance coords
-    -> Types.Instance coords
-mirrorInstanceAcross plane inst =
-    updateInstance (Similarity.mirrorAcross plane) inst
-
-
-scaleInstanceAbout :
-    Point3d Length.Meters coords
-    -> Float
-    -> Types.Instance coords
-    -> Types.Instance coords
-scaleInstanceAbout center scale inst =
-    updateInstance (Similarity.scaleAbout center scale) inst
-
-
-placeInstanceIn :
-    Similarity.Frame coords
-    -> Types.Instance coords
-    -> Types.Instance coords
-placeInstanceIn frame =
-    updateInstance (Similarity.placeIn frame)
-
-
-transformInstance : Mat4 -> Types.Instance coords -> Types.Instance coords
-transformInstance =
-    Similarity.fromMatrix >> Similarity.compose >> updateInstance
-
-
-updateInstance :
-    (SimilarityTransform coords -> SimilarityTransform coords)
-    -> Types.Instance coords
-    -> Types.Instance coords
-updateInstance fn (Types.Instance inst) =
-    Types.Instance { inst | transform = fn inst.transform }
 
 
 
