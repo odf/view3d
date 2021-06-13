@@ -5,11 +5,9 @@ module View3d.EffectsRenderer exposing
     , entities
     )
 
-import Array exposing (Array)
 import Color exposing (Color)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 exposing (Vec3, vec3)
-import Maybe
 import Point3d
 import TriangularMesh exposing (TriangularMesh)
 import Vector3d
@@ -82,12 +80,8 @@ colorAsVec3 color =
     vec3 red green blue
 
 
-entities :
-    Array { a | effects : Mesh }
-    -> Types.Model coords b
-    -> Types.Options
-    -> List WebGL.Entity
-entities meshes model options =
+entities : Types.Model coords b -> Types.Options -> List WebGL.Entity
+entities model options =
     let
         radius =
             3 * model.radius
@@ -138,7 +132,7 @@ entities meshes model options =
                 , alpha = Blend.customAdd Blend.zero Blend.one
                 }
 
-        makeFog { transform } mesh =
+        makeFog (Types.Instance inst) =
             [ WebGL.entityWith
                 [ fogBlender
                 , DepthTest.default
@@ -149,23 +143,23 @@ entities meshes model options =
                 ]
                 vertexShader
                 fragmentShaderFog
-                mesh.effects
+                inst.mesh.effects
                 { uniforms
-                    | transform = Similarity.matrix transform
+                    | transform = Similarity.matrix inst.transform
                     , color = colorAsVec3 options.backgroundColor
                 }
             ]
 
-        makeOutline { transform } mesh =
+        makeOutline (Types.Instance inst) =
             [ WebGL.entityWith
                 [ DepthTest.default
                 , WebGL.Settings.cullFace WebGL.Settings.front
                 ]
                 vertexShader
                 fragmentShaderConstant
-                mesh.effects
+                inst.mesh.effects
                 { uniforms
-                    | transform = Similarity.matrix transform
+                    | transform = Similarity.matrix inst.transform
                     , color = colorAsVec3 options.outlineColor
                     , pushOut = 0.1 * options.outlineWidth
                 }
@@ -176,26 +170,14 @@ entities meshes model options =
                 []
 
             else
-                model.scene
-                    |> List.concatMap
-                        (\(Types.Instance item) ->
-                            Array.get item.idxMesh meshes
-                                |> Maybe.map (makeFog item)
-                                |> Maybe.withDefault []
-                        )
+                List.concatMap makeFog model.scene
 
         outlineEntities =
             if not options.addOutlines then
                 []
 
             else
-                model.scene
-                    |> List.concatMap
-                        (\(Types.Instance item) ->
-                            Array.get item.idxMesh meshes
-                                |> Maybe.map (makeOutline item)
-                                |> Maybe.withDefault []
-                        )
+                List.concatMap makeOutline model.scene
     in
     fogEntities ++ outlineEntities
 

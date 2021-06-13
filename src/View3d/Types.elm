@@ -4,7 +4,8 @@ module View3d.Types exposing
     , FrameSize
     , Instance(..)
     , Material
-    , Mesh
+    , Mesh(..)
+    , MeshImpl
     , Model
     , Options
     , PickerMesh
@@ -66,17 +67,21 @@ type alias PickerMesh =
     }
 
 
-type alias Mesh coords =
+type alias MeshImpl coords =
     { scene : SceneMesh coords
     , effects : EffectsMesh
     , picking : PickerMesh
     }
 
 
+type Mesh coords
+    = Mesh (MeshImpl coords)
+
+
 type Instance coords
     = Instance
         { material : Material
-        , idxMesh : Int
+        , mesh : MeshImpl coords
         , transform : SimilarityTransform coords
         }
 

@@ -26,12 +26,12 @@ type alias Instance coords =
     Types.Instance coords
 
 
-make : Types.Material -> Int -> Instance coords
-make mat idxMesh =
+make : Types.Material -> Types.Mesh coords -> Instance coords
+make mat (Types.Mesh mesh) =
     Types.Instance
         { material = mat
         , transform = Similarity.identity
-        , idxMesh = idxMesh
+        , mesh = mesh
         }
 
 

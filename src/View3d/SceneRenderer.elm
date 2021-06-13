@@ -164,14 +164,10 @@ sceneLights options =
     Scene3d.threeLights sun sky environment
 
 
-entities :
-    Array { a | scene : Mesh coords }
-    -> Types.Model coords b
-    -> Types.Options
-    -> List WebGL.Entity
-entities meshes model options =
+entities : Types.Model coords b -> Types.Options -> List WebGL.Entity
+entities model options =
     let
-        convert index { material, transform } mesh =
+        makeEntity index (Types.Instance { material, transform, mesh }) =
             let
                 mOut =
                     makeMaterial material (Set.member index model.selected)
@@ -186,11 +182,6 @@ entities meshes model options =
                         Scene3d.mesh mOut mesh.scene.surface
             in
             apply transform surface
-
-        makeEntity index (Types.Instance item) =
-            Array.get item.idxMesh meshes
-                |> Maybe.map (convert index item)
-                |> Maybe.withDefault Scene3d.nothing
 
         viewing =
             Camera.viewingMatrix model.cameraState

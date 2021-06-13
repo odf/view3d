@@ -9,7 +9,6 @@ import Length
 import Mesh
 import Point3d exposing (Point3d)
 import Set
-import TriangularMesh exposing (TriangularMesh)
 import Vector3d
 import View3d
 import View3d.Instance as Instance exposing (Instance)
@@ -48,13 +47,10 @@ main =
 init : Flags -> ( Model, Cmd Msg )
 init flags =
     let
-        ( meshes, instances ) =
-            geometry flags
-
         model =
             View3d.init
                 |> View3d.setSize { width = 768, height = 768 }
-                |> View3d.setScene (Just meshes) instances
+                |> View3d.setScene (geometry flags)
                 |> View3d.encompass
     in
     ( model, Cmd.none )
@@ -102,14 +98,9 @@ subscriptions model =
 -- Geometry
 
 
-geometry :
-    Flags
-    -> ( List (TriangularMesh (View3d.Vertex coords)), List (Instance coords) )
+geometry : Flags -> List (Instance coords)
 geometry _ =
     let
-        meshes =
-            sheet
-
         material i =
             case i of
                 0 ->
@@ -124,17 +115,17 @@ geometry _ =
                     , metallic = 0.1
                     }
 
-        inst i =
-            Instance.make (material i) i
+        inst i mesh =
+            Instance.make (material i) mesh
                 |> Instance.scaleAbout
                     (Point3d.meters 0.9 0.9 0.1)
                     (1 + toFloat i)
                 |> Instance.rotateAround Axis3d.y (Angle.degrees -45.0)
     in
-    ( meshes, [ inst 0, inst 1 ] )
+    List.indexedMap inst sheet
 
 
-sheet : List (TriangularMesh (View3d.Vertex coords))
+sheet : List (View3d.Mesh coords)
 sheet =
     let
         makeVertex u v =
@@ -183,12 +174,12 @@ sheet =
         [ (==) 1, (==) 2 ]
 
 
-convertMesh :
-    Mesh.Mesh (Point3d Length.Meters coords)
-    -> TriangularMesh (View3d.Vertex coords)
+convertMesh : Mesh.Mesh (Point3d Length.Meters coords) -> View3d.Mesh coords
 convertMesh meshIn =
     let
         makeVertex position normal =
             { position = position, normal = normal }
     in
-    Mesh.withNormals identity makeVertex meshIn |> Mesh.toTriangularMesh
+    Mesh.withNormals identity makeVertex meshIn
+        |> Mesh.toTriangularMesh
+        |> View3d.mesh

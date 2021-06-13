@@ -58,6 +58,10 @@ type alias Material =
     Types.Material
 
 
+type alias Mesh coords =
+    Types.Mesh coords
+
+
 type alias Options =
     Types.Options
 
@@ -71,7 +75,7 @@ type alias Position =
 
 
 type alias MeshImpl coords =
-    Types.Mesh coords
+    Types.MeshImpl coords
 
 
 type alias ModelImpl coords =
@@ -79,12 +83,7 @@ type alias ModelImpl coords =
         coords
         { requestRedraw : Bool
         , touchStart : Position
-        , meshes : Array (MeshImpl coords)
         }
-
-
-type Mesh coords
-    = Mesh (MeshImpl coords)
 
 
 type Model coords
@@ -112,7 +111,6 @@ init =
         , cameraState = Camera.initialState
         , requestRedraw = False
         , touchStart = { x = 0, y = 0 }
-        , meshes = Array.empty
         }
 
 
@@ -286,8 +284,7 @@ outcome msg model =
 pickingOutcome : Position -> Touch.Keys -> Model coords -> Outcome
 pickingOutcome pos mods (Model model) =
     Camera.pickingRay pos model.cameraState model.center (3 * model.radius)
-        |> Maybe.andThen
-            (\r -> Picker.pick r model.meshes model.scene)
+        |> Maybe.andThen (\r -> Picker.pick r model.scene)
         |> Maybe.map (\index -> Pick mods index)
         |> Maybe.withDefault (PickEmpty mods)
 
@@ -394,22 +391,11 @@ convertMesh mesh_ =
 
 mesh : TriangularMesh (Vertex coords) -> Mesh coords
 mesh =
-    convertMesh >> Mesh
+    convertMesh >> Types.Mesh
 
 
-setMeshes :
-    List (TriangularMesh (Vertex coords))
-    -> ModelImpl coords
-    -> ModelImpl coords
-setMeshes meshes model =
-    { model | meshes = meshes |> List.map convertMesh |> Array.fromList }
-
-
-boundingSphere :
-    Array (MeshImpl coords)
-    -> List (Instance coords)
-    -> ( Vec3, Float )
-boundingSphere meshes scene =
+boundingSphere : List (Instance coords) -> ( Vec3, Float )
+boundingSphere scene =
     let
         fixRadius t r =
             let
@@ -422,26 +408,17 @@ boundingSphere meshes scene =
                 |> List.maximum
                 |> Maybe.withDefault 0
 
-        hasIndex index (Types.Instance e) =
-            e.idxMesh == index
-
-        boundingSpheresForMesh index mesh_ =
-            List.filter (hasIndex index) scene
-                |> List.map
-                    (\(Types.Instance inst) ->
-                        ( Mat4.transform
-                            (Similarity.matrix inst.transform)
-                            mesh_.picking.centroid
-                        , fixRadius
-                            (Similarity.matrix inst.transform)
-                            mesh_.picking.radius
-                        )
-                    )
+        boundingSphereForInstance (Types.Instance inst) =
+            ( Mat4.transform
+                (Similarity.matrix inst.transform)
+                inst.mesh.picking.centroid
+            , fixRadius
+                (Similarity.matrix inst.transform)
+                inst.mesh.picking.radius
+            )
 
         boundingSpheres =
-            Array.toList meshes
-                |> List.indexedMap boundingSpheresForMesh
-                |> List.concat
+            List.map boundingSphereForInstance scene
 
         sceneCenter =
             boundingSpheres
@@ -457,22 +434,14 @@ boundingSphere meshes scene =
     ( sceneCenter, sceneRadius )
 
 
-setScene :
-    Maybe (List (TriangularMesh (Vertex coords)))
-    -> List (Instance coords)
-    -> Model coords
-    -> Model coords
-setScene maybeMeshes instances (Model model) =
+setScene : List (Instance coords) -> Model coords -> Model coords
+setScene instances (Model model) =
     let
-        modelWithMeshes =
-            Maybe.map (flip setMeshes model) maybeMeshes
-                |> Maybe.withDefault model
-
         ( sceneCenter, sceneRadius ) =
-            boundingSphere modelWithMeshes.meshes instances
+            boundingSphere instances
     in
     Model
-        { modelWithMeshes
+        { model
             | scene = instances
             , selected = Set.empty
             , center = sceneCenter
@@ -527,10 +496,10 @@ view toMsg (Model model) options =
             EffectsRenderer.backgroundEntity options.backgroundColor
 
         sceneEntities =
-            SceneRenderer.entities model.meshes model options
+            SceneRenderer.entities model options
 
         fogEntities =
-            EffectsRenderer.entities model.meshes model options
+            EffectsRenderer.entities model options
 
         entities =
             bgEntity :: sceneEntities ++ fogEntities
