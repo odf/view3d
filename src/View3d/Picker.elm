@@ -151,7 +151,11 @@ intersection ray mat mesh =
         |> Maybe.map ((*) factor)
 
 
-pick : Camera.Ray -> Array Mesh -> List (Instance coords) -> Maybe Int
+pick :
+    Camera.Ray
+    -> Array { a | picking : Mesh }
+    -> List (Instance coords)
+    -> Maybe Int
 pick ray meshes scene =
     let
         step ( index, Types.Instance item ) bestSoFar =
@@ -160,7 +164,7 @@ pick ray meshes scene =
                     Maybe.map2
                         (intersection ray)
                         (Mat4.inverse (Similarity.matrix item.transform))
-                        (Array.get item.idxMesh meshes)
+                        (Array.get item.idxMesh meshes |> Maybe.map .picking)
                         |> Maybe.andThen identity
             in
             case intersectionDistance of

@@ -90,8 +90,8 @@ colorAsVec3 color =
 
 
 entities :
-    Array Mesh
-    -> Types.Model coords a
+    Array { a | effects : Mesh }
+    -> Types.Model coords b
     -> Types.Options
     -> List WebGL.Entity
 entities meshes model options =
@@ -156,7 +156,7 @@ entities meshes model options =
                 ]
                 vertexShader
                 fragmentShaderFog
-                mesh
+                mesh.effects
                 { uniforms
                     | transform = Similarity.matrix transform
                     , color = colorAsVec3 options.backgroundColor
@@ -170,7 +170,7 @@ entities meshes model options =
                 ]
                 vertexShader
                 fragmentShaderConstant
-                mesh
+                mesh.effects
                 { uniforms
                     | transform = Similarity.matrix transform
                     , color = colorAsVec3 options.outlineColor

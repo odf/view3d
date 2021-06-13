@@ -167,8 +167,8 @@ sceneLights options =
 
 
 entities :
-    Array (Mesh coords)
-    -> Types.Model coords a
+    Array { a | scene : Mesh coords }
+    -> Types.Model coords b
     -> Types.Options
     -> List WebGL.Entity
 entities meshes model options =
@@ -180,10 +180,12 @@ entities meshes model options =
 
                 surface =
                     if options.drawShadows then
-                        Scene3d.meshWithShadow mOut mesh.surface mesh.shadow
+                        Scene3d.meshWithShadow mOut
+                            mesh.scene.surface
+                            mesh.scene.shadow
 
                     else
-                        Scene3d.mesh mOut mesh.surface
+                        Scene3d.mesh mOut mesh.scene.surface
             in
             apply transform surface
 

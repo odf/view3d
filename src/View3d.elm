@@ -68,14 +68,19 @@ type alias Position =
     { x : Float, y : Float }
 
 
+type alias Mesh coords =
+    { scene : SceneRenderer.Mesh coords
+    , effects : EffectsRenderer.Mesh
+    , picking : Picker.Mesh
+    }
+
+
 type alias ModelImpl coords =
     Types.Model
         coords
         { requestRedraw : Bool
         , touchStart : Position
-        , sceneMeshes : Array (SceneRenderer.Mesh coords)
-        , effectsMeshes : Array EffectsRenderer.Mesh
-        , pickingMeshes : Array Picker.Mesh
+        , meshes : Array (Mesh coords)
         }
 
 
@@ -104,9 +109,7 @@ init =
         , cameraState = Camera.initialState
         , requestRedraw = False
         , touchStart = { x = 0, y = 0 }
-        , sceneMeshes = Array.empty
-        , effectsMeshes = Array.empty
-        , pickingMeshes = Array.empty
+        , meshes = Array.empty
         }
 
 
@@ -281,7 +284,7 @@ pickingOutcome : Position -> Touch.Keys -> Model coords -> Outcome
 pickingOutcome pos mods (Model model) =
     Camera.pickingRay pos model.cameraState model.center (3 * model.radius)
         |> Maybe.andThen
-            (\r -> Picker.pick r model.pickingMeshes model.scene)
+            (\r -> Picker.pick r model.meshes model.scene)
         |> Maybe.map (\index -> Pick mods index)
         |> Maybe.withDefault (PickEmpty mods)
 
@@ -384,16 +387,23 @@ setMeshes :
     -> ModelImpl coords
 setMeshes meshes model =
     { model
-        | sceneMeshes =
-            List.map SceneRenderer.convertMesh meshes |> Array.fromList
-        , effectsMeshes =
-            List.map EffectsRenderer.convertMesh meshes |> Array.fromList
-        , pickingMeshes =
-            List.map Picker.convertMesh meshes |> Array.fromList
+        | meshes =
+            meshes
+                |> List.map
+                    (\m ->
+                        { scene = SceneRenderer.convertMesh m
+                        , effects = EffectsRenderer.convertMesh m
+                        , picking = Picker.convertMesh m
+                        }
+                    )
+                |> Array.fromList
     }
 
 
-boundingSphere : Array Picker.Mesh -> List (Instance coords) -> ( Vec3, Float )
+boundingSphere :
+    Array (Mesh coords)
+    -> List (Instance coords)
+    -> ( Vec3, Float )
 boundingSphere meshes scene =
     let
         fixRadius t r =
@@ -416,10 +426,10 @@ boundingSphere meshes scene =
                     (\(Types.Instance inst) ->
                         ( Mat4.transform
                             (Similarity.matrix inst.transform)
-                            mesh.centroid
+                            mesh.picking.centroid
                         , fixRadius
                             (Similarity.matrix inst.transform)
-                            mesh.radius
+                            mesh.picking.radius
                         )
                     )
 
@@ -454,7 +464,7 @@ setScene maybeMeshes instances (Model model) =
                 |> Maybe.withDefault model
 
         ( sceneCenter, sceneRadius ) =
-            boundingSphere modelWithMeshes.pickingMeshes instances
+            boundingSphere modelWithMeshes.meshes instances
     in
     Model
         { modelWithMeshes
@@ -512,10 +522,10 @@ view toMsg (Model model) options =
             EffectsRenderer.backgroundEntity options.backgroundColor
 
         sceneEntities =
-            SceneRenderer.entities model.sceneMeshes model options
+            SceneRenderer.entities model.meshes model options
 
         fogEntities =
-            EffectsRenderer.entities model.effectsMeshes model options
+            EffectsRenderer.entities model.meshes model options
 
         entities =
             bgEntity :: sceneEntities ++ fogEntities
