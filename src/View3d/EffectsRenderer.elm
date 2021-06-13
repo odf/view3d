@@ -22,15 +22,8 @@ import WebGL.Settings.Blend as Blend
 import WebGL.Settings.DepthTest as DepthTest
 
 
-type alias VertexExtended =
-    { position : Vec3
-    , normal : Vec3
-    , barycentric : Vec3
-    }
-
-
 type alias Mesh =
-    WebGL.Mesh VertexExtended
+    Types.EffectsMesh
 
 
 type alias Uniforms =
@@ -54,7 +47,7 @@ type alias Varyings =
     }
 
 
-extend : Types.Vertex coords -> Float -> Float -> Float -> VertexExtended
+extend : Types.Vertex coords -> Float -> Float -> Float -> Types.EffectsVertex
 extend v x y z =
     { position =
         v.position
@@ -244,7 +237,7 @@ vertexShaderTrivial =
     |]
 
 
-vertexShader : WebGL.Shader VertexExtended Uniforms Varyings
+vertexShader : WebGL.Shader Types.EffectsVertex Uniforms Varyings
 vertexShader =
     [glsl|
 

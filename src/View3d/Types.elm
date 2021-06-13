@@ -1,9 +1,14 @@
 module View3d.Types exposing
-    ( FrameSize
+    ( EffectsMesh
+    , EffectsVertex
+    , FrameSize
     , Instance(..)
     , Material
+    , Mesh
     , Model
     , Options
+    , PickerMesh
+    , SceneMesh
     , Vertex
     )
 
@@ -12,10 +17,12 @@ import Length
 import Math.Vector3 exposing (Vec3)
 import Point3d exposing (Point3d)
 import Quantity
+import Scene3d.Mesh
 import Set exposing (Set)
 import Vector3d exposing (Vector3d)
 import View3d.Camera as Camera
 import View3d.SimilarityTransform exposing (SimilarityTransform)
+import WebGL
 
 
 type alias FrameSize =
@@ -28,10 +35,41 @@ type alias Vertex coords =
     }
 
 
+type alias EffectsVertex =
+    { position : Vec3
+    , normal : Vec3
+    , barycentric : Vec3
+    }
+
+
 type alias Material =
     { color : Color
     , roughness : Float
     , metallic : Float
+    }
+
+
+type alias EffectsMesh =
+    WebGL.Mesh EffectsVertex
+
+
+type alias SceneMesh coords =
+    { surface : Scene3d.Mesh.Uniform coords
+    , shadow : Scene3d.Mesh.Shadow coords
+    }
+
+
+type alias PickerMesh =
+    { centroid : Vec3
+    , radius : Float
+    , triangles : List ( Vec3, Vec3, Vec3 )
+    }
+
+
+type alias Mesh coords =
+    { scene : SceneMesh coords
+    , effects : EffectsMesh
+    , picking : PickerMesh
     }
 
 

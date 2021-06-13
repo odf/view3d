@@ -30,9 +30,7 @@ import WebGL
 
 
 type alias Mesh coords =
-    { surface : Scene3d.Mesh.Uniform coords
-    , shadow : Scene3d.Mesh.Shadow coords
-    }
+    Types.SceneMesh coords
 
 
 convertMesh : TriangularMesh (Types.Vertex coords) -> Mesh coords

@@ -15,10 +15,7 @@ import View3d.Types as Types exposing (Instance)
 
 
 type alias Mesh =
-    { centroid : Vec3
-    , radius : Float
-    , triangles : List ( Vec3, Vec3, Vec3 )
-    }
+    Types.PickerMesh
 
 
 convertMesh : TriangularMesh (Types.Vertex coords) -> Mesh

@@ -1,5 +1,6 @@
 module View3d exposing
     ( Material
+    , Mesh
     , Model
     , Msg
     , Options
@@ -9,6 +10,7 @@ module View3d exposing
     , encompass
     , init
     , lookAlong
+    , mesh
     , requestRedraw
     , rotateBy
     , selection
@@ -68,11 +70,8 @@ type alias Position =
     { x : Float, y : Float }
 
 
-type alias Mesh coords =
-    { scene : SceneRenderer.Mesh coords
-    , effects : EffectsRenderer.Mesh
-    , picking : Picker.Mesh
-    }
+type alias MeshImpl coords =
+    Types.Mesh coords
 
 
 type alias ModelImpl coords =
@@ -80,8 +79,12 @@ type alias ModelImpl coords =
         coords
         { requestRedraw : Bool
         , touchStart : Position
-        , meshes : Array (Mesh coords)
+        , meshes : Array (MeshImpl coords)
         }
+
+
+type Mesh coords
+    = Mesh (MeshImpl coords)
 
 
 type Model coords
@@ -381,27 +384,29 @@ setSize size (Model model) =
     updateCamera (Camera.setFrameSize size) (Model { model | size = size })
 
 
+convertMesh : TriangularMesh (Vertex coords) -> MeshImpl coords
+convertMesh mesh_ =
+    { scene = SceneRenderer.convertMesh mesh_
+    , effects = EffectsRenderer.convertMesh mesh_
+    , picking = Picker.convertMesh mesh_
+    }
+
+
+mesh : TriangularMesh (Vertex coords) -> Mesh coords
+mesh =
+    convertMesh >> Mesh
+
+
 setMeshes :
     List (TriangularMesh (Vertex coords))
     -> ModelImpl coords
     -> ModelImpl coords
 setMeshes meshes model =
-    { model
-        | meshes =
-            meshes
-                |> List.map
-                    (\m ->
-                        { scene = SceneRenderer.convertMesh m
-                        , effects = EffectsRenderer.convertMesh m
-                        , picking = Picker.convertMesh m
-                        }
-                    )
-                |> Array.fromList
-    }
+    { model | meshes = meshes |> List.map convertMesh |> Array.fromList }
 
 
 boundingSphere :
-    Array (Mesh coords)
+    Array (MeshImpl coords)
     -> List (Instance coords)
     -> ( Vec3, Float )
 boundingSphere meshes scene =
@@ -420,16 +425,16 @@ boundingSphere meshes scene =
         hasIndex index (Types.Instance e) =
             e.idxMesh == index
 
-        boundingSpheresForMesh index mesh =
+        boundingSpheresForMesh index mesh_ =
             List.filter (hasIndex index) scene
                 |> List.map
                     (\(Types.Instance inst) ->
                         ( Mat4.transform
                             (Similarity.matrix inst.transform)
-                            mesh.picking.centroid
+                            mesh_.picking.centroid
                         , fixRadius
                             (Similarity.matrix inst.transform)
-                            mesh.picking.radius
+                            mesh_.picking.radius
                         )
                     )
 
