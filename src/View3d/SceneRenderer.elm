@@ -5,7 +5,6 @@ module View3d.SceneRenderer exposing
     )
 
 import Angle
-import Array exposing (Array)
 import Camera3d
 import Color
 import Direction3d
@@ -14,7 +13,6 @@ import Length
 import LineSegment3d
 import Math.Matrix4 as Mat4
 import Math.Vector3 as Vec3 exposing (Vec3)
-import Maybe
 import Point3d
 import Scene3d
 import Scene3d.Light as Light
@@ -164,7 +162,7 @@ sceneLights options =
     Scene3d.threeLights sun sky environment
 
 
-entities : Types.Model coords b -> Types.Options -> List WebGL.Entity
+entities : Types.Model coords -> Types.Options -> List WebGL.Entity
 entities model options =
     let
         makeEntity index (Types.Instance { material, transform, mesh }) =

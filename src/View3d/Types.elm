@@ -9,6 +9,7 @@ module View3d.Types exposing
     , Model
     , Options
     , PickerMesh
+    , Position
     , SceneMesh
     , Vertex
     )
@@ -86,14 +87,19 @@ type Instance coords
         }
 
 
-type alias Model coords a =
-    { a
-        | size : FrameSize
-        , scene : List (Instance coords)
-        , selected : Set Int
-        , center : Vec3
-        , radius : Float
-        , cameraState : Camera.State
+type alias Position =
+    { x : Float, y : Float }
+
+
+type alias Model coords =
+    { size : FrameSize
+    , scene : List (Instance coords)
+    , selected : Set Int
+    , center : Vec3
+    , radius : Float
+    , cameraState : Camera.State
+    , requestRedraw : Bool
+    , touchStart : Position
     }
 
 

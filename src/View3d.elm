@@ -22,7 +22,6 @@ module View3d exposing
     , view
     )
 
-import Array exposing (Array)
 import Bitwise
 import Browser.Events as Events
 import Color
@@ -70,20 +69,16 @@ type alias Options =
 -- MODEL
 
 
-type alias Position =
-    { x : Float, y : Float }
-
-
 type alias MeshImpl coords =
     Types.MeshImpl coords
 
 
+type alias Position =
+    Types.Position
+
+
 type alias ModelImpl coords =
-    Types.Model
-        coords
-        { requestRedraw : Bool
-        , touchStart : Position
-        }
+    Types.Model coords
 
 
 type Model coords
@@ -394,8 +389,8 @@ mesh =
     convertMesh >> Types.Mesh
 
 
-boundingSphere : List (Instance coords) -> ( Vec3, Float )
-boundingSphere scene =
+setScene : List (Instance coords) -> Model coords -> Model coords
+setScene scene (Model model) =
     let
         fixRadius t r =
             let
@@ -431,18 +426,9 @@ boundingSphere scene =
                 |> List.maximum
                 |> Maybe.withDefault 0.0
     in
-    ( sceneCenter, sceneRadius )
-
-
-setScene : List (Instance coords) -> Model coords -> Model coords
-setScene instances (Model model) =
-    let
-        ( sceneCenter, sceneRadius ) =
-            boundingSphere instances
-    in
     Model
         { model
-            | scene = instances
+            | scene = scene
             , selected = Set.empty
             , center = sceneCenter
             , radius = sceneRadius
@@ -601,12 +587,3 @@ onTouchEnd theMsg =
 onTouchCancel : msg -> Html.Attribute msg
 onTouchCancel theMsg =
     Touch.onCancel (\_ -> theMsg)
-
-
-
--- General Helper Functions
-
-
-flip : (a -> b -> c) -> b -> a -> c
-flip f a b =
-    f b a
