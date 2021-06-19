@@ -69,10 +69,6 @@ type alias Options =
 -- MODEL
 
 
-type alias MeshImpl coords =
-    Types.MeshImpl coords
-
-
 type alias Position =
     Types.Position
 
@@ -376,17 +372,13 @@ setSize size (Model model) =
     updateCamera (Camera.setFrameSize size) (Model { model | size = size })
 
 
-convertMesh : TriangularMesh (Vertex coords) -> MeshImpl coords
-convertMesh mesh_ =
-    { scene = SceneRenderer.convertMesh mesh_
-    , effects = EffectsRenderer.convertMesh mesh_
-    , picking = Picker.convertMesh mesh_
-    }
-
-
 mesh : TriangularMesh (Vertex coords) -> Mesh coords
-mesh =
-    convertMesh >> Types.Mesh
+mesh mesh_ =
+    Types.Mesh
+        { scene = SceneRenderer.convertMesh mesh_
+        , effects = EffectsRenderer.convertMesh mesh_
+        , picking = Picker.convertMesh mesh_
+        }
 
 
 setScene : List (Instance coords) -> Model coords -> Model coords
