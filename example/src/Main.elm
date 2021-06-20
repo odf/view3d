@@ -4,6 +4,7 @@ import Angle
 import Axis3d
 import Browser
 import Color
+import Frame3d
 import Html
 import Length
 import Mesh
@@ -115,14 +116,25 @@ geometry _ =
                     , metallic = 0.1
                     }
 
-        inst i mesh =
+        meshes =
+            sheet
+
+        inst frame i mesh =
             Instance.make (material i) mesh
-                |> Instance.scaleAbout
-                    (Point3d.meters 0.9 0.9 0.1)
-                    (1 + toFloat i)
-                |> Instance.rotateAround Axis3d.y (Angle.degrees -45.0)
+                |> Instance.placeIn frame
+
+        instances frame =
+            List.indexedMap (inst frame)
     in
-    List.indexedMap inst sheet
+    [ Frame3d.atOrigin
+    , Frame3d.atOrigin
+        |> Frame3d.rotateAround Axis3d.y (Angle.degrees -30)
+        |> Frame3d.translateBy (Vector3d.meters 0 0 1)
+    , Frame3d.atOrigin
+        |> Frame3d.rotateAround Axis3d.x (Angle.degrees 30)
+        |> Frame3d.translateBy (Vector3d.meters 0 2.5 0)
+    ]
+        |> List.concatMap (\f -> instances f meshes)
 
 
 sheet : List (View3d.Mesh coords)
