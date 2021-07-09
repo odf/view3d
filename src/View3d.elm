@@ -22,10 +22,12 @@ module View3d exposing
     , view
     )
 
+import Angle exposing (Angle)
 import Bitwise
 import Browser.Events as Events
 import Color
 import DOM
+import Direction3d exposing (Direction3d)
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
@@ -352,14 +354,27 @@ updateCamera fn (Model model) =
     { model | cameraState = fn model.cameraState } |> Model
 
 
-lookAlong : Vec3 -> Vec3 -> Model coords -> Model coords
+lookAlong :
+    Direction3d coords
+    -> Direction3d coords
+    -> Model coords
+    -> Model coords
 lookAlong axis up model =
-    updateCamera (Camera.lookAlong axis up) model
+    updateCamera (Camera.lookAlong (asVec3 axis) (asVec3 up)) model
 
 
-rotateBy : Vec3 -> Float -> Model coords -> Model coords
+rotateBy : Direction3d coords -> Angle -> Model coords -> Model coords
 rotateBy axis angle model =
-    updateCamera (Camera.rotateBy axis angle) model
+    updateCamera (Camera.rotateBy (asVec3 axis) (Angle.inRadians angle)) model
+
+
+asVec3 : Direction3d coords -> Vec3
+asVec3 v =
+    let
+        ( x, y, z ) =
+            Direction3d.components v
+    in
+    vec3 x y z
 
 
 encompass : Model coords -> Model coords
